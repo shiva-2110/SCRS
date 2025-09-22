@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Crop Recommendation System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+        }
+        .main-card {
+            max-width: 700px;
+            background: rgba(255,255,255,0.92);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.18);
+            padding: 2.5rem 2rem;
+        }
+        h1 {
+            background: linear-gradient(90deg, #fcb69f 0%, #ffecd2 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-fill-color: transparent;
+            font-weight: 700;
+            font-size: 2.5rem;
+        }
+        .lead {
+            color: #6c3483;
+            font-size: 1.25rem;
+            font-weight: 500;
+        }
+        .info-section {
+            margin-top: 2rem;
+        }
+        .info-section h3 {
+            color: #2874A6;
+            font-weight: 600;
+        }
+        .info-section ul {
+            font-size: 1.1rem;
+        }
+        .btn-predict {
+            background: linear-gradient(90deg, #fcb69f 0%, #ffecd2 100%);
+            color: #6c3483;
+            font-weight: 600;
+            border: none;
+        }
+        .btn-predict:hover {
+            background: linear-gradient(90deg, #ffecd2 0%, #fcb69f 100%);
+            color: #2874A6;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="{{url_for('main_page')}}">
+                <img src="{{url_for('static', filename='images/CROPx.png') }}" alt="CROPx Logo" style="width:40px;height:40px;border-radius:8px;margin-right:10px;object-fit:cover;" />
+                
+            </a>
+            <div class="lang-select" style="width:100%;text-align:right;">
+                <label for="language" class="visually-hidden">Select Language</label>
+                <select id="language" class="form-select w-auto d-inline-block">
+                    <option value="en">English</option>
+                    <option value="hi">हिन्दी</option>
+                    <option value="mr">मराठी</option>
+                </select>
+            </div>
+        </div>
+        <div class="container-fluid">
+             <a class="navbar-brand d-flex align-items-center" href="{{url_for('main_page')}}">
+                <img src="{{url_for(url_for('static', filename='images/CROPx.png') )}}" alt="CROPx Logo" style="width:40px;height:40px;border-radius:8px;margin-right:10px;object-fit:cover;" />
+                Smart CropX
+            </a> 
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="{{url_for('main_page')}}">Info</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{url_for('main_page')}}#about">About</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{url_for('main_page')}}#contact">Contact</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{url_for('predict_page')}}">Crop Prediction</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="main-card">
+        <h1 class="text-center mb-3">Smart Crop Recommendation System</h1>
+        <p class="lead text-center mb-4">Empowering farmers with AI-driven decisions for a sustainable future.</p>
+        <div class="info-section">
+            <h3>Why Choose Smart Crop Recommendation?</h3>
+            <ul>
+                <li><strong>Data-Driven Decisions:</strong> Uses soil, weather, and environmental data for accurate crop suggestions.</li>
+                <li><strong>Maximize Yield:</strong> Recommends crops best suited for your field conditions, increasing productivity.</li>
+                <li><strong>Resource Optimization:</strong> Helps save water, fertilizer, and other resources by choosing the right crop.</li>
+                <li><strong>Adapt to Climate Change:</strong> AI adapts to changing weather patterns and soil health.</li>
+                <li><strong>Easy to Use:</strong> Simple, intuitive interface for all farmers, regardless of technical background.</li>
+            </ul>
+        </div>
+        <div class="info-section">
+            <h3>How Does It Work?</h3>
+            <ul>
+                <li>Enter your field data (N, P, K, temperature, humidity, pH, rainfall).</li>
+                <li>Our AI model analyzes the data and predicts the best crop for your land.</li>
+                <li>Get instant recommendations and explanations for your choices.</li>
+            </ul>
+        </div>
+        <div class="text-center mt-4">
+            <a href="{{url_for('smart_crop_recommendation')}}" class="btn btn-predict btn-lg">Try Crop Prediction</a>
+        </div>
+    </div>
+</body>
+</html>
