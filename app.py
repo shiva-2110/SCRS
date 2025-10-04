@@ -491,7 +491,7 @@ def _run_retrain_job(job_id):
         from sklearn.preprocessing import MinMaxScaler, LabelEncoder
         from sklearn.ensemble import RandomForestClassifier
         # load original dataset
-        csvpath = os.path.join(os.path.dirname(__file__),'Crop_recommendation.csv')
+        csvpath = os.path.join(os.path.dirname(__file__),'data','Crop_recommendation.csv')
         if not os.path.exists(csvpath):
             raise RuntimeError('original dataset not found')
         df = pd.read_csv(csvpath)
@@ -603,6 +603,7 @@ if __name__ == '__main__':
     init_db()
     port =int(os.environ.get("PORT",5000))
     app.run(host='0.0.0.0',port=port,debug=True)
+
 
 
 
