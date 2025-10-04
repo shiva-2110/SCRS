@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template,redirect, url_for, session
+from flask import Flask, request, jsonify, render_template,redirect, url_for, session,send_file
 import pickle
 import numpy as np
 from flask_cors import CORS
@@ -583,7 +583,18 @@ def admin_retrain():
     t.start()
     return jsonify({'job_id': job_id, 'status': 'queued'})
 
+@app.route('/api/admin/download-label-encoder', methods=['GET'])
+def download_label_encoder():
+    token = request.headers.get('X-Admin-Token')
+    if token != 'admintoken123':
+        return jsonify({'error': 'Unauthorized'}), 401
 
+    le_path = os.path.join(os.path.dirname(__file__), 'model', 'label_encoder.pkl')
+    if not os.path.exists(le_path):
+        return jsonify({'error': 'File not found'}), 404
+
+    return send_file(le_path, as_attachment=True)
+    
 @app.route('/api/admin/retrain/status/<job_id>', methods=['GET'])
 @admin_required
 def retrain_status(job_id):
@@ -603,6 +614,7 @@ if __name__ == '__main__':
     init_db()
     port =int(os.environ.get("PORT",5000))
     app.run(host='0.0.0.0',port=port,debug=True)
+
 
 
 
