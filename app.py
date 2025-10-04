@@ -164,7 +164,7 @@ try:
 except Exception as e:
     print(f"Warning: could not load scaler from {SCALER_PATH}: {e}")
 
-LE_PATH = os.path.join(os.path.dirname(__file__),'model' 'label_encoder.pkl')
+LE_PATH = os.path.join(os.path.dirname(__file__),'model' ,'label_encoder.pkl')
 le = None
 try:
     with open(LE_PATH, 'rb') as f:
@@ -533,7 +533,7 @@ def _run_retrain_job(job_id):
         # save artifacts
         with open(MODEL_PATH, 'wb') as f: pickle.dump(rfc, f)
         with open(SCALER_PATH, 'wb') as f: pickle.dump(ms, f)
-        le_path = os.path.join(os.path.dirname(__file__), 'label_encoder.pkl')
+        le_path = os.path.join(os.path.dirname(__file__),'model', 'label_encoder.pkl')
         with open(le_path, 'wb') as f: pickle.dump(le, f)
         global model, scaler
         model = rfc
@@ -603,6 +603,7 @@ if __name__ == '__main__':
     init_db()
     port =int(os.environ.get("PORT",5000))
     app.run(host='0.0.0.0',port=port,debug=True)
+
 
 
 
