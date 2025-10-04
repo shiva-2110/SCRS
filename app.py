@@ -164,7 +164,7 @@ try:
 except Exception as e:
     print(f"Warning: could not load scaler from {SCALER_PATH}: {e}")
 
-LE_PATH = os.path.join(os.path.dirname(__file__), 'label_encoder.pkl')
+LE_PATH = os.path.join(os.path.dirname(__file__),'model' 'label_encoder.pkl')
 le = None
 try:
     with open(LE_PATH, 'rb') as f:
@@ -603,6 +603,7 @@ if __name__ == '__main__':
     init_db()
     port =int(os.environ.get("PORT",5000))
     app.run(host='0.0.0.0',port=port,debug=True)
+
 
 
 
