@@ -9,7 +9,7 @@ import threading
 import uuid
 
 app = Flask(__name__)
-CORS(app,, origins=["https://sios.dogon.onrender.com"])
+CORS(app, origins=["https://sios.dogon.onrender.com"])
 
 app.secret_key = 'your_secret_key_here'
 
@@ -572,6 +572,7 @@ def health():
 if __name__ == '__main__':
     init_db()
     app.run(debug=True)
+
 
 
 
