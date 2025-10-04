@@ -94,7 +94,7 @@
         const pwd = document.getElementById('adminPass').value.trim();
         console.log('Attempting admin login with', user, '*****');
         try{
-          const res = await fetch('https://scrs-0sgn.onrender.com./api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:user,password:pwd})});
+          const res = await fetch('https://scrs-0sgn.onrender.com/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:user,password:pwd})});
           const text = await res.text();
           let data = {};
           try{ data = JSON.parse(text); } catch(e){ data = { error: text }; }
@@ -113,7 +113,7 @@
       } else {
         const mobile = document.getElementById('mobile').value.trim();
         try{
-          const res = await fetch('https://scrs-0sgn.onrender.com./api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mobile})});
+          const res = await fetch('https://scrs-0sgn.onrender.com/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mobile})});
             const data = await res.json();
             if(res.ok){
               // store mobile and username for prediction linking and welcome
@@ -134,6 +134,7 @@
   </script>
 </body>
 </html>
+
 
 
 
