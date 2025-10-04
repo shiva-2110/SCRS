@@ -43,7 +43,7 @@
         address: document.getElementById('address').value.trim()
       };
       try{
-        const res = await fetch('h https://scrs-0sgn.onrender.com./api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+        const res = await fetch('https://scrs-0sgn.onrender.com./api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
         const data = await res.json();
         if(res.ok){
           document.getElementById('msg').innerHTML = '<div class="alert alert-success">Registered successfully. Please login.</div>';
@@ -58,6 +58,7 @@
   </script>
 </body>
 </html>
+
 
 
 
