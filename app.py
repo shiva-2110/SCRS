@@ -9,7 +9,7 @@ import threading
 import uuid
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True)
+CORS(app,origins=["https://sisso.dgon.onrender.com"], supports_credentials=True)
 
 app.secret_key = 'your_secret_key_here'
 
@@ -61,7 +61,11 @@ def predict():
         input_data = np.array([[N, P, K, temperature, humidity, ph, rainfall]])
         input_scaled = scaler.transform(input_data)
         prediction = model.predict(input_scaled)[0]
-        crop = crop_dict.get(prediction, "Unknown")
+        if le:
+            crop = le.inverse_transform([prediction])[0]
+        else:
+            crop = crop_dict.get(prediction, "Unknown")
+
 
         return render_template('result.html', crop=crop)
     except Exception as e:
@@ -160,6 +164,13 @@ try:
 except Exception as e:
     print(f"Warning: could not load scaler from {SCALER_PATH}: {e}")
 
+LE_PATH = os.path.join(os.path.dirname(__file__), 'label_encoder.pkl')
+le = None
+try:
+    with open(LE_PATH, 'rb') as f:
+        le = pickle.load(f)
+except Exception as e:
+    print(f"Warning: could not load label encoder: {e}")
 
 
 # Crop dictionary (update as per your notebook)
@@ -350,7 +361,11 @@ def recommend():
         except Exception:
             probs = None
         prediction = model.predict(transformed)[0]
-        crop = crop_dict.get(prediction, "Unknown")
+        if le:
+            crop = le.inverse_transform([prediction])[0]
+        else:
+            crop = crop_dict.get(prediction, "Unknown")
+
         print(f"Predicted crop: {crop}")
 
         # If mobile provided, link prediction to user
@@ -369,9 +384,9 @@ def recommend():
         try:
             conn = get_db_connection()
             cur = conn.cursor()
-            cur.execute('''INSERT INTO predictions (user_id, N, P, K, temperature, humidity, ph, rainfall, predicted_crop, created_at)
-                           VALUES (?,?,?,?,?,?,?,?,?,?)''',
-                        (user_id, N, P, K, temperature, humidity, ph, rainfall, crop, datetime.utcnow().isoformat()))
+            cur.execute('''INSERT INTO predictions (user_id, N, P, K, temperature, humidity, ph, rainfall, predicted_crop, input_source, created_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?)''',
+            (user_id, N, P, K, temperature, humidity, ph, rainfall, crop, 'api', datetime.utcnow().isoformat()))
             conn.commit()
             prediction_id = cur.lastrowid
             conn.close()
@@ -406,7 +421,6 @@ def _mqtt_on_message(client, userdata, msg):
 
 
 
-
 @app.route('/api/feedback', methods=['POST'])
 def feedback():
     """Record user feedback: actual crop name for a previous prediction.
@@ -428,15 +442,15 @@ def feedback():
         return jsonify({'error': 'user not found'}), 404
     user_id = row['id']
     try:
-        # store feedback as a special row in predictions with predicted_crop set to actual and a flag in address? Use a separate table
-        cur.execute('''CREATE TABLE IF NOT EXISTS feedback (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            prediction_id INTEGER,
-            N REAL, P REAL, K REAL, temperature REAL, humidity REAL, ph REAL, rainfall REAL,
-            actual_crop TEXT,
-            created_at TEXT NOT NULL
-        )''')
+        # # store feedback as a special row in predictions with predicted_crop set to actual and a flag in address? Use a separate table
+        # cur.execute('''CREATE TABLE IF NOT EXISTS feedback (
+        #     id INTEGER PRIMARY KEY AUTOINCREMENT,
+        #     user_id INTEGER,
+        #     prediction_id INTEGER,
+        #     N REAL, P REAL, K REAL, temperature REAL, humidity REAL, ph REAL, rainfall REAL,
+        #     actual_crop TEXT,
+        #     created_at TEXT NOT NULL
+        # )''')
         # if prediction_id supplied, try to copy features from predictions
         N = P = K = temperature = humidity = ph = rainfall = None
         if prediction_id:
@@ -534,6 +548,21 @@ def _run_retrain_job(job_id):
             _jobs[job_id]['error'] = str(e)
             _jobs[job_id]['finished_at'] = datetime.utcnow().isoformat()
 
+def cleanup_old_jobs(max_age_minutes=60, max_jobs=100):
+    now = datetime.utcnow()
+    with _jobs_lock:
+        # Remove jobs older than max_age_minutes
+        expired = [job_id for job_id, job in _jobs.items()
+                   if job['finished_at'] and
+                   (now - datetime.fromisoformat(job['finished_at'])).total_seconds() > max_age_minutes * 60]
+        for job_id in expired:
+            del _jobs[job_id]
+
+        # If still too many jobs, trim oldest
+        if len(_jobs) > max_jobs:
+            sorted_jobs = sorted(_jobs.items(), key=lambda x: x[1]['finished_at'] or x[1]['started_at'] or now)
+            for job_id, _ in sorted_jobs[:len(_jobs) - max_jobs]:
+                del _jobs[job_id]
 
 
 
@@ -544,6 +573,7 @@ def admin_retrain():
     """Retrain model using original dataset plus feedback when available.
     This is a simple retrain: fits MinMaxScaler on combined features and trains RandomForest.
     """
+    cleanup_old_jobs()
     # Enqueue retrain as a background job and return job id
     job_id = str(uuid.uuid4())
     with _jobs_lock:
@@ -573,6 +603,7 @@ if __name__ == '__main__':
     init_db()
     port =int(os.environ.get("PORT",5000))
     app.run(host='0.0.0.0',port=port,debug=True)
+
 
 
 
