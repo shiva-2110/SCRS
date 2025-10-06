@@ -11,6 +11,11 @@ import uuid
 app = Flask(__name__)
 CORS(app,origins=["https://sisso.dgon.onrender.com"], supports_credentials=True)
 
+
+@app.route('/loading')
+def loading_screen():
+    return render_template('loading.html')
+    
 app.secret_key = 'your_secret_key_here'
 
 _mqtt_client = None
@@ -23,9 +28,7 @@ ADMIN_USER = 'admin'
 ADMIN_PASS = 'adminpass'
 ADMIN_TOKEN = 'admintoken123'  # simple static token for demo
 
-@app.route('/loading')
-def loading_screen():
-    return render_template('loading.html')
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login_page():
@@ -618,6 +621,7 @@ if __name__ == '__main__':
     init_db()
     port =int(os.environ.get("PORT",5000))
     app.run(host='0.0.0.0',port=port,debug=True)
+
 
 
 
