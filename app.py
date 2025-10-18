@@ -491,67 +491,104 @@ def _run_retrain_job(job_id):
         _jobs[job_id]['status'] = 'running'
         _jobs[job_id]['started_at'] = datetime.utcnow().isoformat()
         _jobs[job_id]['progress'] = 0
+
     try:
         import pandas as pd
         from sklearn.preprocessing import MinMaxScaler, LabelEncoder
         from sklearn.ensemble import RandomForestClassifier
-        # load original dataset
-        csvpath = os.path.join(os.path.dirname(__file__),'data','Crop_recommendation.csv')
+
+        # Load original dataset
+        csvpath = os.path.join(os.path.dirname(__file__), 'data', 'Crop_recommendation.csv')
         if not os.path.exists(csvpath):
-            raise RuntimeError('original dataset not found')
+            raise RuntimeError('Original dataset not found')
         df = pd.read_csv(csvpath)
         if 'Crop' not in df.columns:
-            raise RuntimeError('dataset missing Crop column')
-        le = LabelEncoder()
-        df['crop_label'] = le.fit_transform(df['Crop'].astype(str))
-        # include feedback
+            raise RuntimeError('Dataset missing Crop column')
+
+        # Connect to DB and ensure feedback table exists
         conn = get_db_connection()
         cur = conn.cursor()
-        try:
-            cur.execute('SELECT N,P,K,temperature,humidity,ph,rainfall,actual_crop FROM feedback')
-            rows = cur.fetchall()
-            if rows:
-                fb = pd.DataFrame(rows, columns=['N','P','K','temperature','humidity','ph','rainfall','actual_crop'])
-                unseen = set(fb['actual_crop'].astype(str).unique()) - set(le.classes_)
-                if unseen:
-                    le.classes_ = list(le.classes_) + list(unseen)
-                fb['crop_label'] = le.transform(fb['actual_crop'].astype(str))
-                df_fb = fb[['N','P','K','temperature','humidity','ph','rainfall','crop_label']]
-                df = pd.concat([df, df_fb.rename(columns={'crop_label':'crop_label'})], ignore_index=True, sort=False)
-        except Exception:
-            pass
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS feedback (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                prediction_id INTEGER,
+                N REAL, P REAL, K REAL, temperature REAL, humidity REAL, ph REAL, rainfall REAL,
+                actual_crop TEXT,
+                created_at TEXT NOT NULL
+            )
+        ''')
+
+        # Load feedback data
+        cur.execute('SELECT N,P,K,temperature,humidity,ph,rainfall,actual_crop FROM feedback')
+        rows = cur.fetchall()
         conn.close()
+
+        # Combine crops from original and feedback
+        fb = pd.DataFrame(rows, columns=['N','P','K','temperature','humidity','ph','rainfall','actual_crop']) if rows else pd.DataFrame()
+        all_crops = pd.concat([df['Crop'].astype(str), fb['actual_crop'].astype(str)], ignore_index=True)
+        le = LabelEncoder()
+        le.fit(all_crops)
+
+        # Transform labels
+        df['crop_label'] = le.transform(df['Crop'].astype(str))
+        if not fb.empty:
+            fb['crop_label'] = le.transform(fb['actual_crop'].astype(str))
+            df_fb = fb[['N','P','K','temperature','humidity','ph','rainfall','crop_label']]
+            df = pd.concat([df, df_fb], ignore_index=True)
+
+        # Prepare features and labels
         feature_cols = ['N','P','K','temperature','humidity','ph','rainfall']
         X_full = df[feature_cols].astype(float).fillna(0)
         y_full = df['crop_label']
-        # update progress
+
         with _jobs_lock:
             _jobs[job_id]['progress'] = 20
+
+        # Train scaler and model
         ms = MinMaxScaler()
         X_scaled = ms.fit_transform(X_full)
+
         with _jobs_lock:
             _jobs[job_id]['progress'] = 50
+
         rfc = RandomForestClassifier(n_estimators=200, random_state=42)
         rfc.fit(X_scaled, y_full)
+
         with _jobs_lock:
             _jobs[job_id]['progress'] = 90
-        # save artifacts
+
+        # Save model artifacts
         with open(MODEL_PATH, 'wb') as f: pickle.dump(rfc, f)
         with open(SCALER_PATH, 'wb') as f: pickle.dump(ms, f)
-        le_path = os.path.join(os.path.dirname(__file__),'model', 'label_encoder.pkl')
+        le_path = os.path.join(os.path.dirname(__file__), 'model', 'label_encoder.pkl')
         with open(le_path, 'wb') as f: pickle.dump(le, f)
-        global model, scaler
+
+        # Validate saved files
+        assert os.path.exists(MODEL_PATH), "Model file not saved"
+        assert os.path.exists(SCALER_PATH), "Scaler file not saved"
+        assert os.path.exists(le_path), "Label encoder file not saved"
+
+        # Update global references
+        global model, scaler, le
         model = rfc
         scaler = ms
+        le = le
+
         with _jobs_lock:
             _jobs[job_id]['progress'] = 100
             _jobs[job_id]['status'] = 'finished'
             _jobs[job_id]['finished_at'] = datetime.utcnow().isoformat()
+
+        print(f"[{job_id}] Retraining completed successfully.")
+
     except Exception as e:
         with _jobs_lock:
             _jobs[job_id]['status'] = 'error'
             _jobs[job_id]['error'] = str(e)
             _jobs[job_id]['finished_at'] = datetime.utcnow().isoformat()
+        print(f"[{job_id}] Retraining failed: {e}")
+
 
 def cleanup_old_jobs(max_age_minutes=60, max_jobs=100):
     now = datetime.utcnow()
@@ -619,6 +656,7 @@ if __name__ == '__main__':
     init_db()
     port =int(os.environ.get("PORT",5000))
     app.run(host='0.0.0.0',port=port,debug=True)
+
 
 
 
