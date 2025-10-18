@@ -44,6 +44,19 @@
       </div>
     </div>
 
+    <div class="mt-4">
+  <h5>User Feedback</h5>
+  <button id="btnLoadFeedback" class="btn btn-sm btn-outline-info mb-2">Load Feedback</button>
+  <div id="feedbackArea" class="table-responsive">
+    <table class="table table-bordered">
+      <thead><tr><th>User</th><th>Crop</th><th>Source</th><th>Timestamp</th></tr></thead>
+      <tbody id="feedbackTbody"></tbody>
+    </table>
+  </div>
+</div>
+
+
+    
     <div id="usersArea" class="table-responsive">
       <table class="table table-striped">
         <thead><tr><th>ID</th><th>Name</th><th>Mobile</th><th>Address</th><th>Created</th><th>Actions</th></tr></thead>
@@ -132,15 +145,35 @@
 
     fetchUsers();
 
-    document.getElementById('btnRetrain').addEventListener('click', async function(){
-      const retrainMsg = document.getElementById('retrainMsg');
-      retrainMsg.innerHTML = '<div class="text-info">Retraining model (this may take a moment)...</div>';
-      try{
-        const res = await fetch('${BASE_URL}/api/admin/retrain',{method:'POST',headers:{'X-Admin-Token':token}});
-        const data = await res.json();
-        if(res.ok){ retrainMsg.innerHTML = '<div class="text-success">Retrain completed.</div>'; } else { retrainMsg.innerHTML = `<div class="text-danger">${data.error||'Retrain failed'}</div>`; }
-      }catch(err){ retrainMsg.innerHTML = '<div class="text-danger">Could not contact server</div>'; }
-    });
+   document.getElementById('btnRetrain').addEventListener('click', async function(){
+  const retrainMsg = document.getElementById('retrainMsg');
+  retrainMsg.innerHTML = '<div class="text-info">Retraining model (this may take a moment)...</div>';
+  try {
+    const res = await fetch(`${BASE_URL}/api/admin/retrain`, { method: 'POST', headers: { 'X-Admin-Token': token } });
+    const data = await res.json();
+    if (!res.ok || !data.job_id) {
+      retrainMsg.innerHTML = `<div class="text-danger">${data.error || 'Retrain failed'}</div>`;
+      return;
+    }
+    const jobId = data.job_id;
+    const pollStatus = async () => {
+      const statusRes = await fetch(`${BASE_URL}/api/admin/retrain/status/${jobId}`, { headers: { 'X-Admin-Token': token } });
+      const statusData = await statusRes.json();
+      if (statusData.status === 'finished') {
+        retrainMsg.innerHTML = '<div class="text-success">Retrain completed successfully.</div>';
+      } else if (statusData.status === 'error') {
+        retrainMsg.innerHTML = `<div class="text-danger">Error: ${statusData.error}</div>`;
+      } else {
+        retrainMsg.innerHTML = `<div class="text-info">Retrain in progress... ${statusData.progress}%</div>`;
+        setTimeout(pollStatus, 2000);
+      }
+    };
+    pollStatus();
+  } catch (err) {
+    retrainMsg.innerHTML = '<div class="text-danger">Could not contact server</div>';
+  }
+});
+
 
     // Start/Stop MQTT
     document.getElementById('btnIotStart').addEventListener('click', async function(){
@@ -162,6 +195,28 @@
       }catch(e){ document.getElementById('iotLatest').innerText = 'Could not contact server'; }
     });
 
+
+
+    document.getElementById('btnLoadFeedback').addEventListener('click', async function(){
+  try {
+    const res = await fetch(`${BASE_URL}/api/admin/feedback`, { headers: { 'X-Admin-Token': token } });
+    const data = await res.json();
+    const tbody = document.getElementById('feedbackTbody');
+    tbody.innerHTML = '';
+    (data.feedback || []).forEach(f => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${f.mobile}</td><td>${f.actual_crop}</td><td>${f.input_source || 'N/A'}</td><td>${f.created_at}</td>`;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    document.getElementById('feedbackArea').innerHTML = '<div class="alert alert-danger">Could not load feedback</div>';
+  }
+});
+
+
+
+    
+
     // Poll latest IoT data every 5s
     setInterval(async ()=>{
       try{
@@ -174,6 +229,7 @@
   </script>
 </body>
 </html>
+
 
 
 
