@@ -45,17 +45,12 @@ def login_page():
         else:
             return render_template('login.html', error='Mobile not found')
     return render_template('login.html')
-
-@app.route('/predict', methods=['POST'])
-def handle_prediction():
-    if not session.get('user_id'):
-        return redirect(url_for('login_page'))
-    return render_template('smart_crop_recommendation_multilang.html')
-
+    
 @app.route('/predict', methods=['POST'])
 def predict():
     if not session.get('user_id'):
         return redirect(url_for('login_page'))
+
     try:
         N = float(request.form['N'])
         P = float(request.form['P'])
@@ -68,15 +63,18 @@ def predict():
         input_data = np.array([[N, P, K, temperature, humidity, ph, rainfall]])
         input_scaled = scaler.transform(input_data)
         prediction = model.predict(input_scaled)[0]
+
         if le:
             crop = le.inverse_transform([prediction])[0]
         else:
             crop = crop_dict.get(prediction, "Unknown")
 
-
         return render_template('result.html', crop=crop)
+
     except Exception as e:
+        # If form is empty or error occurs, show input page again
         return render_template('smart_crop_recommendation_multilang.html', error=str(e))
+
 
 @app.route('/logout')
 def logout():
@@ -621,6 +619,7 @@ if __name__ == '__main__':
     init_db()
     port =int(os.environ.get("PORT",5000))
     app.run(host='0.0.0.0',port=port,debug=True)
+
 
 
 
