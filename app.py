@@ -340,6 +340,24 @@ def iot_latest():
         return jsonify(_latest_iot)
     return jsonify({'error': 'no data yet'}), 404
 
+@app.route('/api/admin/feedback')
+@admin_required
+def admin_feedback():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT f.actual_crop, f.created_at, u.mobile, p.input_source
+            FROM feedback f
+            LEFT JOIN users u ON f.user_id = u.id
+            LEFT JOIN predictions p ON f.prediction_id = p.id
+            ORDER BY f.created_at DESC
+        ''')
+        rows = cur.fetchall()
+        conn.close()
+        return jsonify({'feedback': [dict(r) for r in rows]})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/recommend', methods=['POST'])
@@ -656,6 +674,7 @@ if __name__ == '__main__':
     init_db()
     port =int(os.environ.get("PORT",5000))
     app.run(host='0.0.0.0',port=port,debug=True)
+
 
 
 
