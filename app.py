@@ -177,6 +177,24 @@ try:
 except Exception as e:
     print(f"Warning: could not load label encoder: {e}")
 
+from tensorflow.keras.models import load_model
+import cv2
+
+CNN_MODEL_PATH = os.path.join(os.path.dirname(__file__), 'model', 'cnn_model.h5')
+ENV_MODEL_PATH = os.path.join(os.path.dirname(__file__), 'model', 'env_model.pkl')
+
+cnn_model = None
+env_model = None
+try:
+    cnn_model = load_model(CNN_MODEL_PATH)
+except Exception as e:
+    print(f"Could not load CNN model: {e}")
+
+try:
+    with open(ENV_MODEL_PATH, 'rb') as f:
+        env_model = pickle.load(f)
+except Exception as e:
+    print(f"Could not load environmental model: {e}")
 
 # Crop dictionary (update as per your notebook)
 crop_dict = {
@@ -185,6 +203,62 @@ crop_dict = {
     14: "Pomegranate", 15: "Lentil", 16: "Blackgram", 17: "Mungbean", 18: "Mothbeans",
     19: "Pigeonpeas", 20: "Kidneybeans", 21: "Chickpea", 22: "Coffee"
 }
+
+@app.route('/api/predict_disease', methods=['POST'])
+def predict_disease():
+    crop_type = request.form.get('crop_type')
+    location = request.form.get('location')
+    image = request.files.get('leaf_image')
+
+    if not crop_type or not location or not image:
+        return jsonify({'error': 'Missing crop_type, location, or image'}), 400
+
+    try:
+        # Image preprocessing
+        img_np = np.frombuffer(image.read(), np.uint8)
+        img = cv2.imdecode(img_np, cv2.IMREAD_COLOR)
+        img = cv2.resize(img, (128, 128)) / 255.0
+        img = np.expand_dims(img, axis=0)
+
+        # CNN prediction
+        cnn_pred = cnn_model.predict(img)[0]
+        disease_label = np.argmax(cnn_pred)
+        image_confidence = float(np.max(cnn_pred))
+
+        # Environmental prediction (mocked for now)
+        env_features = np.array([[30, 80, 120]])  # Replace with actual weather data
+        env_risk_score = env_model.predict_proba(env_features)[0][1]  # Assuming binary classifier
+
+        # Fusion
+        final_score = 0.6 * image_confidence + 0.4 * env_risk_score
+        risk_level = "High" if final_score > 0.7 else "Moderate" if final_score > 0.4 else "Low"
+
+        # Suggestion (mocked)
+        suggestion = "Use organic fungicide and monitor humidity."
+
+        return jsonify({
+            "disease": f"Disease {disease_label}",
+            "confidence": round(final_score, 2),
+            "risk_level": risk_level,
+            "suggestion": suggestion
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/alerts')
+def get_alerts():
+    mobile = request.args.get('mobile')
+    if not mobile:
+        return jsonify({'error': 'mobile required'}), 400
+
+    # Mocked alert logic
+    alerts = [
+        {"disease": "Leaf Blight", "location": "Karchana", "level": "High"},
+        {"disease": "Rust", "location": "Karchana", "level": "Moderate"}
+    ]
+    return jsonify({'alerts': alerts})
+
 
 @app.route('/')
 def main_page():
@@ -673,6 +747,7 @@ if __name__ == '__main__':
     init_db()
     port =int(os.environ.get("PORT",5000))
     app.run(host='0.0.0.0',port=port,debug=True)
+
 
 
 
