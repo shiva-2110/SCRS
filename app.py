@@ -177,24 +177,24 @@ try:
 except Exception as e:
     print(f"Warning: could not load label encoder: {e}")
 
-from tensorflow.keras.models import load_model
-import cv2
+# from tensorflow.keras.models import load_model
+# import cv2
 
-CNN_MODEL_PATH = os.path.join(os.path.dirname(__file__), 'model', 'cnn_model.h5')
-ENV_MODEL_PATH = os.path.join(os.path.dirname(__file__), 'model', 'env_model.pkl')
+# CNN_MODEL_PATH = os.path.join(os.path.dirname(__file__), 'model', 'cnn_model.h5')
+# ENV_MODEL_PATH = os.path.join(os.path.dirname(__file__), 'model', 'env_model.pkl')
 
-cnn_model = None
-env_model = None
-try:
-    cnn_model = load_model(CNN_MODEL_PATH)
-except Exception as e:
-    print(f"Could not load CNN model: {e}")
+# cnn_model = None
+# env_model = None
+# try:
+#     cnn_model = load_model(CNN_MODEL_PATH)
+# except Exception as e:
+#     print(f"Could not load CNN model: {e}")
 
-try:
-    with open(ENV_MODEL_PATH, 'rb') as f:
-        env_model = pickle.load(f)
-except Exception as e:
-    print(f"Could not load environmental model: {e}")
+# try:
+#     with open(ENV_MODEL_PATH, 'rb') as f:
+#         env_model = pickle.load(f)
+# except Exception as e:
+#     print(f"Could not load environmental model: {e}")
 
 # Crop dictionary (update as per your notebook)
 crop_dict = {
@@ -747,6 +747,7 @@ if __name__ == '__main__':
     init_db()
     port =int(os.environ.get("PORT",5000))
     app.run(host='0.0.0.0',port=port,debug=True)
+
 
 
 
