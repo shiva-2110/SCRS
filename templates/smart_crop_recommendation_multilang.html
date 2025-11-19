@@ -354,7 +354,7 @@
                 const storedMobile = localStorage.getItem('mobile');
                 if(!storedMobile){
                     alert('Please register or login before predicting. You will be redirected to the login page.');
-                    window.location.href = 'login.html';
+                    window.location.href = "{{ url_for('login_page') }}";
                     return;
                 }
                 payload.mobile = storedMobile;
@@ -495,7 +495,7 @@
                 localStorage.removeItem('mobile');
                 localStorage.removeItem('username');
                 localStorage.removeItem('adminToken');
-                window.location.href = 'login.html';
+                window.location.href = "{{ url_for('login_page') }}";
             }
 
             // expose hook for other code to start timer
@@ -521,7 +521,7 @@
             if(!mobile){
                 // no registered user — prevent prediction use
                 alert('Please register or login before predicting a crop. Redirecting to login.');
-                window.location.href = 'login.html';
+                window.location.href = "{{ url_for('login_page') }}";
                 return;
             }
             // show logout when user is present
@@ -530,11 +530,12 @@
                 localStorage.removeItem('mobile');
                 localStorage.removeItem('username');
                 localStorage.removeItem('adminToken');
-                window.location.href = 'login.html';
+                window.location.href = "{{ url_for('login_page') }}";
             });
         })();
     </script>
 </body>
 </html>
+
 
 
