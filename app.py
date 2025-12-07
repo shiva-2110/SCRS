@@ -1,3 +1,4 @@
+
 from flask import Flask, request, jsonify, render_template,redirect, url_for, session,send_file
 import pickle
 import numpy as np
@@ -7,6 +8,13 @@ from datetime import datetime , timedelta
 import os
 import threading
 import uuid
+
+import firebase_admin
+from firebase_admin import credentials, auth
+
+cred = credentials.Certificate("firebase_key.json")  # path to your downloaded key
+firebase_admin.initialize_app(cred)
+
 
 app = Flask(__name__)
 CORS(app,origins=["https://sisso.dgon.onrender.com"], supports_credentials=True)
@@ -125,16 +133,7 @@ def init_db():
         )
     ''')
 
-        # OTP table for temporary storage
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS otps (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            mobile TEXT NOT NULL,
-            otp TEXT NOT NULL,
-            expiry TEXT NOT NULL,
-            verified INTEGER DEFAULT 0
-        )
-    ''')
+      
 
     # predictions table stores inputs and results, optionally linked to a user
     cur.execute('''
@@ -287,91 +286,31 @@ def register_page():
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.get_json()
+    token = data.get('token')   # Firebase ID token from frontend
     name = data.get('name')
-    mobile = data.get('mobile')
     address = data.get('address', '')
 
-    if not name or not mobile:
-        return jsonify({'error': 'name and mobile required'}), 400
-
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute('SELECT verified FROM otps WHERE mobile=? ORDER BY id DESC LIMIT 1', (mobile,))
-    row = cur.fetchone()
-
-    if not row or row['verified'] != 1:
-        conn.close()
-        return jsonify({'error': 'mobile not verified via OTP'}), 403
+    if not token or not name:
+        return jsonify({'error': 'token and name required'}), 400
 
     try:
+        # Verify Firebase token
+        decoded = auth.verify_id_token(token)
+        phone = decoded.get('phone_number')
+        if not phone:
+            return jsonify({'error': 'phone number missing in token'}), 400
+
+        # Insert into users table
+        conn = get_db_connection()
+        cur = conn.cursor()
         cur.execute('INSERT INTO users (name, mobile, address, created_at) VALUES (?,?,?,?)',
-                    (name, mobile, address, datetime.utcnow().isoformat()))
+                    (name, phone, address, datetime.utcnow().isoformat()))
         conn.commit()
         user_id = cur.lastrowid
         conn.close()
         return jsonify({'status': 'registered', 'user_id': user_id})
-    except sqlite3.IntegrityError:
-        return jsonify({'error': 'mobile already registered'}), 409
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-
-import random
-
-@app.route('/api/send-otp', methods=['POST'])
-def send_otp():
-    data = request.get_json()
-    mobile = data.get('mobile')
-    if not mobile:
-        return jsonify({'error': 'mobile required'}), 400
-
-    otp = str(random.randint(100000, 999999))
-    expiry = (datetime.utcnow() + timedelta(minutes=5)).isoformat()
-
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute('INSERT INTO otps (mobile, otp, expiry) VALUES (?,?,?)',
-                (mobile, otp, expiry))
-    conn.commit()
-    conn.close()
-
-    # TODO: integrate SMS/Email service here
-    print(f"OTP for {mobile}: {otp}")  # For testing only
-
-    return jsonify({'status': 'otp_sent'})
-
-
-@app.route('/api/verify-otp', methods=['POST'])
-def verify_otp():
-    data = request.get_json()
-    mobile = data.get('mobile')
-    user_otp = data.get('otp')
-
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute('SELECT id, otp, expiry FROM otps WHERE mobile=? ORDER BY id DESC LIMIT 1', (mobile,))
-    row = cur.fetchone()
-
-    if not row:
-        conn.close()
-        return jsonify({'error': 'OTP not found'}), 404
-
-    otp, expiry = row['otp'], row['expiry']
-    if datetime.utcnow() > datetime.fromisoformat(expiry):
-        conn.close()
-        return jsonify({'error': 'OTP expired'}), 400
-
-    if otp != user_otp:
-        conn.close()
-        return jsonify({'error': 'Invalid OTP'}), 400
-
-    # Mark verified
-    cur.execute('UPDATE otps SET verified=1 WHERE id=?', (row['id'],))
-    conn.commit()
-    conn.close()
-
-    return jsonify({'status': 'verified'})
+        return jsonify({'error': f'Invalid token: {str(e)}'}), 401
 
 
 
@@ -827,6 +766,7 @@ if __name__ == '__main__':
     init_db()
     port =int(os.environ.get("PORT",5000))
     app.run(host='0.0.0.0',port=port,debug=True)
+
 
 
 
