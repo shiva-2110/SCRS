@@ -1,220 +1,197 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Smart Crop Recommendation System</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    /* Background + overlay (place last to override Bootstrap) */
-    html, body { height:100%; margin:0; font-family:'Segoe UI',Roboto,Arial,sans-serif; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
-    body {
-      background-image: url("{{ url_for('static', filename='images/bg-field.jpg') }}") !important;
-      background-size: cover !important;
-      background-position: center center !important;
-      background-repeat: no-repeat !important;
-      background-attachment: fixed !important;
-      color: #fff !important;
-    }
-    body::before {
-      content: "" !important;
-      position: fixed !important;
-      inset: 0 !important;
-      background: rgba(6,40,8,0.36) !important;
-      pointer-events: none !important;
-      z-index: 0 !important;
-    }
-
-    /* Card container above overlay */
-    .container {
-      max-width: 700px;
-      margin: 40px auto;
-      background: rgba(255,255,255,0.06) !important;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.45) !important;
-      border-radius: 24px;
-      border: 1px solid rgba(255,255,255,0.08);
-      padding: 2.5rem 2rem;
-      position: relative;
-      z-index: 1;
-      backdrop-filter: blur(6px);
-    }
-
-    /* Typography and small UI tweaks */
-    h2 {
-      background: linear-gradient(90deg,#fcb69f 0%,#ffecd2 100%);
-      -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
-      font-weight:700; font-size:2.2rem; text-align:center;
-    }
-    .lang-select { margin-bottom:1.5rem; text-align:right; }
-    .graphic { display:flex; justify-content:center; margin-bottom:1.5rem; }
-    .croplogo { width:120px; height:120px; border-radius:16px; box-shadow:0 4px 16px rgba(0,0,0,0.35); background:rgba(255,255,255,0.9); object-fit:cover; }
-
-    /* Form controls visible on dark overlay */
-    .form-control, .form-select {
-      background: rgba(255,255,255,0.04) !important;
-      color: #fff !important;
-      border: 1px solid rgba(255,255,255,0.12) !important;
-    }
-    .form-control::placeholder { color: rgba(255,255,255,0.6) !important; }
-    label { color: #f1f1f1 !important; font-weight:600; }
-
-    /* Buttons */
-    .btn-success {
-      background: linear-gradient(90deg,#39b54a,#1d8f2a) !important;
-      border: none !important; color: #fff !important; font-weight:700;
-    }
-    .btn-outline-secondary { color:#fff !important; border-color: rgba(255,255,255,0.12) !important; }
-
-    /* Alerts and debug */
-    #alertList { color: #ffdddd; }
-    pre#debugOut { background: rgba(255,255,255,0.06); color: #fff; border-radius:8px; padding:12px; }
-
-    @media (max-width:640px) {
-      .container { margin:20px; padding:18px; }
-      h2 { font-size:1.6rem; }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Crop Recommendation System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+        }
+        .container {
+            max-width: 700px;
+            margin: 40px auto;
+            background: rgba(255,255,255,0.92);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.18);
+            padding: 2.5rem 2rem;
+        }
+        h2 {
+            background: linear-gradient(90deg, #fcb69f 0%, #ffecd2 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+            font-size: 2.2rem;
+            text-align: center;
+        }
+        .lang-select {
+            margin-bottom: 1.5rem;
+            text-align: right;
+        }
+        .result {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #6c3483;
+            font-weight: 600;
+        }
+        .graphic {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+        .graphic svg {
+            width: 120px;
+            height: 120px;
+        }
+        .croplogo {
+            width: 120px;
+            height: 120px;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(31,38,135,0.18);
+            background: #fff;
+            object-fit: cover;
+        }
+    </style>
 </head>
 <body>
-  <script>
-    /* navigation guard (keep unchanged) */
-    (function(){
-      try{
-        const fromMain = sessionStorage.getItem('fromMain') === '1';
-        const ref = document.referrer || '';
-        const fromRef = ref.indexOf('smart_crop_system_main.html') !== -1 || ref.indexOf('smart_crop_system_info.html') !== -1 || ref.indexOf('login.html') !== -1 || ref.indexOf('register.html') !== -1;
-        if(!fromMain && !fromRef){
-          window.location.href = '{{url_for('main_page')}}';
-        } else {
-          sessionStorage.removeItem('fromMain');
-        }
-      }catch(e){ try{ window.location.href = '{{url_for('main_page')}}'; }catch(e){} }
-    })();
-  </script>
-
-  <div class="container">
-    <div class="graphic" style="flex-direction:column;align-items:center;">
-      <a href="{{url_for('main_page')}}" aria-label="Go to main page">
-        <img src="{{ url_for('static', filename='images/CROPx.png') }}" alt="CROPx Logo" class="croplogo mb-2" />
-      </a>
-      <div class="lang-select" style="width:100%;text-align:right;">
-        <label for="language" class="visually-hidden">Select Language</label>
-        <select id="language" class="form-select w-auto d-inline-block">
-          <option value="en">English</option>
-          <option value="hi">हिन्दी</option>
-          <option value="mr">मराठी</option>
-        </select>
-      </div>
-    </div>
-
-    <h2 id="title">Smart Crop Recommendation System</h2>
-    <p id="desc" class="lead mb-4" style="text-align:center;color:rgba(255,255,255,0.9);">Empowering farmers with AI-driven decisions for a sustainable future.</p>
-
-    <div class="d-flex justify-content-between align-items-center" style="margin-bottom:8px;">
-      <p id="welcome" class="text-center" style="font-weight:600;color:#fff;margin-bottom:0;display:none;"></p>
-      <div class="d-flex align-items-center">
-        <small id="logoutCountdown" class="text-muted me-2" style="display:none"></small>
-        <div><button id="btnLogout" class="btn btn-outline-secondary btn-sm" style="display:none">Logout</button></div>
-      </div>
-    </div>
-
-    <form id="cropForm">
-      <div class="mb-3">
-        <label for="inputSource" class="form-label">Input Source</label>
-        <select id="inputSource" class="form-select">
-          <option value="user">User Input</option>
-          <option value="iot">IoT Sensor</option>
-        </select>
-      </div>
-
-      <div id="iotSettings" style="display:none;margin-bottom:12px;">
-        <label class="form-label">IoT Device Connection</label>
-        <div class="input-group mb-2">
-          <input id="iotEndpoint" class="form-control" placeholder="Enter IoT HTTP endpoint (e.g. http://192.168.1.50/sensor)" />
-          <button id="btnIotConnect" class="btn btn-outline-primary" type="button">Connect</button>
+    <script>
+        // Navigation guard: allow prediction page only when navigated from site
+        (function(){
+            try{
+                const fromMain = sessionStorage.getItem('fromMain') === '1';
+                const ref = document.referrer || '';
+                const fromRef = ref.indexOf('smart_crop_system_main.html') !== -1 || ref.indexOf('smart_crop_system_info.html') !== -1 || ref.indexOf('login.html') !== -1 || ref.indexOf('register.html') !== -1;
+                if(!fromMain && !fromRef){
+                    // not allowed, redirect to main
+                    window.location.href = '{{url_for('main_page')}}';
+                } else {
+                    // clear flag so reload doesn't bypass
+                    sessionStorage.removeItem('fromMain');
+                }
+            }catch(e){
+                // on error, be safe and redirect
+                try{ window.location.href = '{{url_for('main_page')}}'; }catch(e){}
+            }
+        })();
+    </script>
+    <div class="container">
+        <div class="graphic" style="flex-direction:column;align-items:center;">
+            <a href="{{url_for('main_page')}}" aria-label="Go to main page">
+                <img src="{{ url_for('static', filename='images/CROPx.png') }}" alt="CROPx Logo - Go to main page" class="croplogo mb-2" />
+            </a>
+            <div class="lang-select" style="width:100%;text-align:right;">
+                <label for="language" class="visually-hidden">Select Language</label>
+                <select id="language" class="form-select w-auto d-inline-block">
+                    <option value="en">English</option>
+                    <option value="hi">हिन्दी</option>
+                    <option value="mr">मराठी</option>
+                </select>
+            </div>
         </div>
-        <div class="d-flex gap-2 align-items-center">
-          <button id="btnIotFetch" class="btn btn-sm btn-outline-secondary" type="button">Fetch Sensor Now</button>
-          <button id="btnIotPoll" class="btn btn-sm btn-outline-secondary" type="button">Start Polling</button>
-          <div id="iotStatus" class="ms-2 text-muted">Not connected</div>
+                <h2 id="title">Smart Crop Recommendation System</h2>
+        <p id="desc" class="lead mb-4" style="text-align:center;">Empowering farmers with AI-driven decisions for a sustainable future.</p>
+        <div class="d-flex justify-content-between align-items-center" style="margin-bottom:8px;">
+            <p id="welcome" class="text-center" style="font-weight:600;color:#4b2c83;margin-bottom:0;display:none;"></p>
+            <div class="d-flex align-items-center">
+                <small id="logoutCountdown" class="text-muted me-2" style="display:none"></small>
+                <div><button id="btnLogout" class="btn btn-outline-secondary btn-sm" style="display:none">Logout</button></div>
+            </div>
         </div>
-      </div>
+        <form id="cropForm">
+            <div class="mb-3">
+                <label for="inputSource" class="form-label">Input Source</label>
+                <select id="inputSource" class="form-select">
+                    <option value="user">User Input</option>
+                    <option value="iot">IoT Sensor</option>
+                </select>
+            </div>
+            <div id="iotSettings" style="display:none;margin-bottom:12px;">
+                <label class="form-label">IoT Device Connection</label>
+                <div class="input-group mb-2">
+                    <input id="iotEndpoint" class="form-control" placeholder="Enter IoT HTTP endpoint (e.g. http://192.168.1.50/sensor)" />
+                    <button id="btnIotConnect" class="btn btn-outline-primary" type="button">Connect</button>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <button id="btnIotFetch" class="btn btn-sm btn-outline-secondary">Fetch Sensor Now</button>
+                    <button id="btnIotPoll" class="btn btn-sm btn-outline-secondary">Start Polling</button>
+                    <div id="iotStatus" class="ms-2 text-muted">Not connected</div>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="N" class="form-label" id="labelN">Nitrogen (N)</label>
+                <input type="number" class="form-control" id="N" required>
+            </div>
+            <div class="mb-3">
+                <label for="P" class="form-label" id="labelP">Phosphorus (P)</label>
+                <input type="number" class="form-control" id="P" required>
+            </div>
+            <div class="mb-3">
+                <label for="K" class="form-label" id="labelK">Potassium (K)</label>
+                <input type="number" class="form-control" id="K" required>
+            </div>
+            <div class="mb-3">
+                <label for="temperature" class="form-label" id="labelTemp">Temperature (°C)</label>
+                <input type="number" step="0.1" class="form-control" id="temperature" required>
+            </div>
+            <div class="mb-3">
+                <label for="humidity" class="form-label" id="labelHum">Humidity (%)</label>
+                <input type="number" step="0.1" class="form-control" id="humidity" required>
+            </div>
+            <div class="mb-3">
+                <label for="ph" class="form-label" id="labelPh">pH</label>
+                <input type="number" step="0.1" class="form-control" id="ph" required>
+            </div>
+            <div class="mb-3">
+                <label for="rainfall" class="form-label" id="labelRain">Rainfall (mm)</label>
+                <input type="number" step="0.1" class="form-control" id="rainfall" required>
+            </div>
+            <hr>
+<!-- <h5>Disease Risk Prediction (Optional)</h5> -->
 
-      <div class="mb-3">
-        <label for="N" class="form-label" id="labelN">Nitrogen (N)</label>
-        <input type="number" class="form-control" id="N" required>
-      </div>
-      <div class="mb-3">
-        <label for="P" class="form-label" id="labelP">Phosphorus (P)</label>
-        <input type="number" class="form-control" id="P" required>
-      </div>
-      <div class="mb-3">
-        <label for="K" class="form-label" id="labelK">Potassium (K)</label>
-        <input type="number" class="form-control" id="K" required>
-      </div>
-      <div class="mb-3">
-        <label for="temperature" class="form-label" id="labelTemp">Temperature (°C)</label>
-        <input type="number" step="0.1" class="form-control" id="temperature" required>
-      </div>
-      <div class="mb-3">
-        <label for="humidity" class="form-label" id="labelHum">Humidity (%)</label>
-        <input type="number" step="0.1" class="form-control" id="humidity" required>
-      </div>
-      <div class="mb-3">
-        <label for="ph" class="form-label" id="labelPh">pH</label>
-        <input type="number" step="0.1" class="form-control" id="ph" required>
-      </div>
-      <div class="mb-3">
-        <label for="rainfall" class="form-label" id="labelRain">Rainfall (mm)</label>
-        <input type="number" step="0.1" class="form-control" id="rainfall" required>
-      </div>
+<div class="mb-3">
+    <label for="cropType" class="form-label">Crop Type</label>
+    <select id="cropType" class="form-select">
+        <option value="">-- Select Crop --</option>
+        <option value="wheat">Wheat</option>
+        <option value="rice">Rice</option>
+        <option value="maize">Maize</option>
+        <!-- Add more crops as needed -->
+    </select>
+</div>
 
-      <hr>
+<div class="mb-3">
+    <label for="leafImage" class="form-label">Upload Leaf Image</label>
+    <input type="file" class="form-control" id="leafImage" accept="image/*">
+</div>
 
-      <div class="mb-3">
-        <label for="cropType" class="form-label">Crop Type</label>
-        <select id="cropType" class="form-select">
-          <option value="">-- Select Crop --</option>
-          <option value="wheat">Wheat</option>
-          <option value="rice">Rice</option>
-          <option value="maize">Maize</option>
-        </select>
-      </div>
+            <button type="submit" class="btn btn-success w-100" id="btnPredict">Recommend Crop</button>
+        </form>
+            <div class="form-check form-switch my-3">
+                <input class="form-check-input" type="checkbox" id="debugMode">
+                <label class="form-check-label" for="debugMode">Debug mode (show transformed features & probs)</label>
+            </div>
+            <div class="result text-center" id="result"></div>
+          <div id="alertSection" class="mt-4" style="display:none;">
+            <h5>⚠️ Disease Alerts</h5>
+            <div id="alertList" class="text-danger fw-bold"></div>
+            </div>
 
-      <div class="mb-3">
-        <label for="leafImage" class="form-label">Upload Leaf Image</label>
-        <input type="file" class="form-control" id="leafImage" accept="image/*">
-      </div>
-
-      <button type="submit" class="btn btn-success w-100" id="btnPredict">Recommend Crop</button>
-    </form>
-
-    <div class="form-check form-switch my-3">
-      <input class="form-check-input" type="checkbox" id="debugMode">
-      <label class="form-check-label" for="debugMode">Debug mode (show transformed features & probs)</label>
+            <pre id="debugOut" style="white-space:pre-wrap;background:#f8f9fa;border-radius:8px;padding:12px;margin-top:12px;display:none;max-height:300px;overflow:auto;"></pre>
+            <div id="feedbackArea" style="display:none;margin-top:12px;">
+                <label for="actualCrop">If you planted a different crop, tell us (feedback):</label>
+                <select id="actualCrop" class="form-select mt-1">
+                    <option value="">-- select actual crop --</option>
+                </select>
+                <button id="btnFeedback" class="btn btn-outline-success btn-sm mt-2">Submit Feedback</button>
+                <div id="feedbackMsg" style="margin-top:8px"></div>
+            </div>
     </div>
-
-    <div class="result text-center" id="result"></div>
-
-    <div id="alertSection" class="mt-4" style="display:none;">
-      <h5>⚠️ Disease Alerts</h5>
-      <div id="alertList" class="text-danger fw-bold"></div>
-    </div>
-
-    <pre id="debugOut" style="white-space:pre-wrap;border-radius:8px;padding:12px;margin-top:12px;display:none;max-height:300px;overflow:auto;"></pre>
-
-    <div id="feedbackArea" style="display:none;margin-top:12px;">
-      <label for="actualCrop">If you planted a different crop, tell us (feedback):</label>
-      <select id="actualCrop" class="form-select mt-1">
-        <option value="">-- select actual crop --</option>
-      </select>
-      <button id="btnFeedback" class="btn btn-outline-success btn-sm mt-2">Submit Feedback</button>
-      <div id="feedbackMsg" style="margin-top:8px"></div>
-    </div>
-  </div>
-
-  <!-- Paste your original <script> block here (the template above preserved logic) -->
-  <script>
+    <script>
         // Translations
         const translations = {
             en: {
@@ -317,6 +294,29 @@
         document.getElementById('cropForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             let payload;
+            const cropType = document.getElementById('cropType').value;
+            const leafImage = document.getElementById('leafImage').files[0];
+
+if (cropType && leafImage) {
+    const diseaseForm = new FormData();
+    diseaseForm.append('crop_type', cropType);
+    diseaseForm.append('location', payload.location || ''); // reuse location
+    diseaseForm.append('leaf_image', leafImage);
+
+    try {
+        const diseaseRes = await fetch('https://scrs-0sgn.onrender.com/api/predict_disease', {
+            method: 'POST',
+            body: diseaseForm
+        });
+        const diseaseData = await diseaseRes.json();
+        if (diseaseData.disease) {
+            document.getElementById('result').innerText += `\n🦠 Disease Risk: ${diseaseData.disease} (${diseaseData.risk_level})\n💡 Suggestion: ${diseaseData.suggestion}`;
+        }
+    } catch {
+        document.getElementById('result').innerText += '\n⚠️ Disease prediction failed.';
+    }
+}
+
             if (document.getElementById('inputSource').value === 'user') {
                 payload = {
                     N: document.getElementById('N').value,
@@ -354,13 +354,30 @@
                 const storedMobile = localStorage.getItem('mobile');
                 if(!storedMobile){
                     alert('Please register or login before predicting. You will be redirected to the login page.');
-                    window.location.href = "{{ url_for('login_page') }}";
+                    window.location.href = '{{url_for('login_page')}}';
                     return;
                 }
                 payload.mobile = storedMobile;
+
+                
+                // 🔔 Fetch disease alerts for this mobile number
+try {
+    const alertRes = await fetch('https://scrs-0sgn.onrender.com/api/alerts?mobile=' + storedMobile);
+    const alertData = await alertRes.json();
+    if (alertData.alerts && alertData.alerts.length > 0) {
+        const alertList = document.getElementById('alertList');
+        alertList.innerHTML = '';
+        alertData.alerts.forEach(a => {
+            const div = document.createElement('div');
+            div.innerText = `${a.disease} risk in ${a.location}: ${a.level}`;
+            alertList.appendChild(div);
+        });
+        document.getElementById('alertSection').style.display = '';
+    }
+} catch {}
                 // include debug flag when checkbox checked
                 const debugMode = document.getElementById('debugMode').checked;
-                const response = await fetch(' https://scrs-0sgn.onrender.com/api/recommend', {
+                const response = await fetch('https://scrs-0sgn.onrender.com/api/recommend', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(Object.assign({}, payload, { input_source: document.getElementById('inputSource').value }, debugMode ? {debug:true} : {}))
@@ -401,7 +418,6 @@
 
         // handle feedback submission
         document.getElementById('btnFeedback').addEventListener('click', async function(){
-          
             const actual = document.getElementById('actualCrop').value;
             const mobile = localStorage.getItem('mobile');
             const feedbackMsg = document.getElementById('feedbackMsg');
@@ -416,7 +432,7 @@
                 const payload = { mobile, actual_crop: actual };
                 // include prediction id only when input source was IoT and we have one
                 if(window._lastPredictionId) payload.prediction_id = window._lastPredictionId;
-                const res = await fetch(' https://scrs-0sgn.onrender.com/api/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+                const res = await fetch('https://scrs-0sgn.onrender.com/api/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
                 const data = await res.json();
                 if(res.ok){ feedbackMsg.innerHTML = '<div class="text-success">Thank you — feedback recorded.</div>'; } else { feedbackMsg.innerHTML = `<div class="text-danger">${data.error||'Feedback failed'}</div>`; }
             }catch(err){ feedbackMsg.innerHTML = '<div class="text-danger">Could not contact server</div>'; }
@@ -495,7 +511,7 @@
                 localStorage.removeItem('mobile');
                 localStorage.removeItem('username');
                 localStorage.removeItem('adminToken');
-                window.location.href = "{{ url_for('login_page') }}";
+                window.location.href = '{{url_for('login_page')}}';
             }
 
             // expose hook for other code to start timer
@@ -521,7 +537,7 @@
             if(!mobile){
                 // no registered user — prevent prediction use
                 alert('Please register or login before predicting a crop. Redirecting to login.');
-                window.location.href = "{{ url_for('login_page') }}";
+                window.location.href = '{{url_for('login_page')}}';
                 return;
             }
             // show logout when user is present
@@ -530,12 +546,9 @@
                 localStorage.removeItem('mobile');
                 localStorage.removeItem('username');
                 localStorage.removeItem('adminToken');
-                window.location.href = "{{ url_for('login_page') }}";
+                window.location.href = '{{url_for('login_page')}}';
             });
         })();
     </script>
 </body>
 </html>
-
-
-
