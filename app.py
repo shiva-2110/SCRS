@@ -5,14 +5,15 @@ import numpy as np
 from flask_cors import CORS
 import sqlite3
 from datetime import datetime , timedelta
-import os
+import json,os
 import threading
 import uuid
 
 import firebase_admin
 from firebase_admin import credentials, auth
 
-cred = credentials.Certificate("firebase_key.json")  # path to your downloaded key
+firebase_key = json.loads(os.environ.get("FIREBASE_KEY_JSON"))
+cred = credentials.Certificate(firebase_key)
 firebase_admin.initialize_app(cred)
 
 
@@ -766,6 +767,7 @@ if __name__ == '__main__':
     init_db()
     port =int(os.environ.get("PORT",5000))
     app.run(host='0.0.0.0',port=port,debug=True)
+
 
 
 
