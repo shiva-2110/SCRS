@@ -72,7 +72,16 @@
         }
         .form-control, .form-select {
             background: rgba(255,255,255,0.04) !important;
+            color: #fff !important;  
         } 
+        .form-control::placeholder {
+              color: rgba(255,255,255,0.6) !important;   <-- THIS sets placeholder color
+        }
+        label {
+              color: #f1f1f1 !important;   <-- THIS sets label color
+              font-weight: 600;
+        }
+
 
         
     </style>
@@ -571,4 +580,5 @@ try {
     </script>
 </body>
 </html>
+
 
