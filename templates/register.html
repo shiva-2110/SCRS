@@ -15,14 +15,14 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
   <script>
     const firebaseConfig = {
-      apiKey: "AIzaSyArIkkbhB0xh6cTxiRjNZDo4jpyxRboo04",
-      authDomain: "smartcroprecomendationsystem.firebaseapp.com",
-      projectId: "smartcroprecomendationsystem",
-      storageBucket: "smartcroprecomendationsystem.appspot.com",
-      messagingSenderId: "488645977106",
-      appId: "1:488645977106:web:6b82b874e661e5eac624cb",
-      measurementId: "G-DCF5L0F4BJ"
-    };
+  apiKey: "AIzaSyArIkkbhB0xh6cTxiRjNZDo4jpyxRboo04",
+  authDomain: "smartcroprecomendationsystem.firebaseapp.com",
+  projectId: "smartcroprecomendationsystem",
+  storageBucket: "smartcroprecomendationsystem.firebasestorage.app",
+  messagingSenderId: "488645977106",
+  appId: "1:488645977106:web:6b82b874e661e5eac624cb",
+  measurementId: "G-DCF5L0F4BJ"
+};
     firebase.initializeApp(firebaseConfig);
   </script>
 </head>
@@ -62,52 +62,78 @@
       <a href="{{url_for('login_page')}}">Already registered? Login</a>
     </div>
   </div>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+  import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 
-  <script>
-    let confirmationResult;
+  const firebaseConfig = {
+    apiKey: "AIzaSyArIkkbhB0xh6cTxiRjNZDo4jpyxRboo04",
+    authDomain: "smartcroprecomendationsystem.firebaseapp.com",
+    projectId: "smartcroprecomendationsystem",
+    storageBucket: "smartcroprecomendationsystem.firebasestorage.app",
+    messagingSenderId: "488645977106",
+    appId: "1:488645977106:web:6b82b874e661e5eac624cb",
+    measurementId: "G-DCF5L0F4BJ"
+  };
 
-    function sendOTP() {
-      const phoneNumber = document.getElementById("mobile").value.trim();
-      const appVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container');
-      firebase.auth().signInWithPhoneNumber(phoneNumber, appVerifier)
-        .then(result => {
-          confirmationResult = result;
-          document.getElementById('msg').innerHTML = '<div class="alert alert-info">OTP sent to your mobile.</div>';
-        })
-        .catch(error => {
-          document.getElementById('msg').innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
-        });
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  // Initialize reCAPTCHA once
+  window.recaptchaVerifier = new RecaptchaVerifier('recaptcha-container', {
+    'size': 'invisible',
+    'callback': (response) => {
+      console.log("reCAPTCHA solved");
     }
+  }, auth);
 
-    function verifyOTP() {
-      const code = document.getElementById("otp").value.trim();
-      confirmationResult.confirm(code).then(result => {
-        const user = result.user;
-        user.getIdToken().then(token => {
-          // Send verified token + other details to Flask backend
-          const payload = {
-            name: document.getElementById('name').value.trim(),
-            address: document.getElementById('address').value.trim(),
-            token: token
-          };
-          fetch('/api/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          }).then(res => res.json())
-            .then(data => {
-              if(data.status === 'registered'){
-                document.getElementById('msg').innerHTML = '<div class="alert alert-success">Registered successfully!</div>';
-                setTimeout(()=> location.href='{{url_for('login_page')}}',1200);
-              } else {
-                document.getElementById('msg').innerHTML = `<div class="alert alert-danger">${data.error||'Registration failed'}</div>`;
-              }
-            });
-        });
-      }).catch(error => {
-        document.getElementById('msg').innerHTML = `<div class="alert alert-danger">Invalid OTP: ${error.message}</div>`;
+  let confirmationResult;
+
+  window.sendOTP = function() {
+    const phoneNumber = document.getElementById("mobile").value.trim();
+    const appVerifier = window.recaptchaVerifier;
+
+    signInWithPhoneNumber(auth, phoneNumber, appVerifier)
+      .then(result => {
+        confirmationResult = result;
+        document.getElementById('msg').innerHTML = '<div class="alert alert-info">OTP sent to your mobile.</div>';
+      })
+      .catch(error => {
+        document.getElementById('msg').innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
       });
-    }
-  </script>
+  }
+
+  window.verifyOTP = function() {
+    const code = document.getElementById("otp").value.trim();
+    confirmationResult.confirm(code).then(result => {
+      const user = result.user;
+      user.getIdToken().then(token => {
+        const payload = {
+          name: document.getElementById('name').value.trim(),
+          address: document.getElementById('address').value.trim(),
+          token: token
+        };
+        fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).then(res => res.json())
+          .then(data => {
+            if(data.status === 'registered'){
+              document.getElementById('msg').innerHTML = '<div class="alert alert-success">Registered successfully!</div>';
+              setTimeout(()=> location.href='{{url_for('login_page')}}',1200);
+            } else {
+              document.getElementById('msg').innerHTML = `<div class="alert alert-danger">${data.error||'Registration failed'}</div>`;
+            }
+          });
+      });
+    }).catch(error => {
+      document.getElementById('msg').innerHTML = `<div class="alert alert-danger">Invalid OTP: ${error.message}</div>`;
+    });
+  }
+</script>
+
+  
 </body>
 </html>
+
