@@ -55,12 +55,14 @@ body::before {
   z-index: 1;
   max-width: 820px;
   margin: 48px auto;
-  background: var(--panel-bg);
-  border: 1px solid #e7efe6;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
+  background: rgba(255, 255, 255, 0.08); /* semi-transparent white */
+  backdrop-filter: blur(6px);            /* frosted glass effect */
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   padding: 2rem;
 }
+
 
 /* 3) Headings: crisp, no rainbow gradients */
 h2 {
@@ -693,6 +695,7 @@ try {
     </script>
 </body>
 </html>
+
 
 
 
