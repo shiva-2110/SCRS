@@ -61,11 +61,15 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-light mb-4">
         <div class="container-fluid">
+            <!-- Brand Logo -->
             <a class="navbar-brand d-flex align-items-center" href="{{url_for('main_page')}}">
-                <img src="{{url_for('static', filename='images/CROPx.png') }}" alt="CROPx Logo" style="width:40px;height:40px;border-radius:8px;margin-right:10px;object-fit:cover;" />
-                
-            </a>
-            <div class="lang-select" style="width:100%;text-align:right;">
+                <img src="{{url_for('static', filename='images/CROPx.png')}}" alt="CROPx Logo" 
+                     style="width:40px;height:40px;border-radius:8px;margin-right:10px;object-fit:cover;" />
+                Smart CropX
+            </a> 
+
+            <!-- Language Selector -->
+            <div class="lang-select ms-auto">
                 <label for="language" class="visually-hidden">Select Language</label>
                 <select id="language" class="form-select w-auto d-inline-block">
                     <option value="en">English</option>
@@ -73,21 +77,21 @@
                     <option value="mr">मराठी</option>
                 </select>
             </div>
-        </div>
-        <div class="container-fluid">
-             <a class="navbar-brand d-flex align-items-center" href="{{url_for('main_page')}}">
-                <img src="{{url_for(url_for('static', filename='images/CROPx.png') )}}" alt="CROPx Logo" style="width:40px;height:40px;border-radius:8px;margin-right:10px;object-fit:cover;" />
-                Smart CropX
-            </a> 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+
+            <!-- Navbar Toggle -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
+
+            <!-- Navbar Links -->
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                            <a class="nav-link" href="https://pmkisan.gov.in/" target="_blank">
-                                    <img src="{{url_for(url_for('static', filename='images/pmkisan-logo.png') )}}" alt="PM-Kisan" style="height:30px;">
-                            </a>
+                    <!-- PM-Kisan Logo Link -->
+                    <li class="nav-item d-flex align-items-center">
+                        <a class="nav-link p-0" href="https://pmkisan.gov.in/" target="_blank" rel="noopener noreferrer">
+                            <img src="{{url_for('static', filename='images/pmkisan-logo.png')}}" alt="PM-Kisan" style="height:30px;">
+                        </a>
                     </li>
                     <li class="nav-item"><a class="nav-link" href="{{url_for('main_page')}}">Info</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{url_for('main_page')}}#about">About</a></li>
@@ -97,9 +101,12 @@
             </div>
         </div>
     </nav>
+
+    <!-- Main Card -->
     <div class="main-card">
         <h1 class="text-center mb-3">Smart Crop Recommendation System</h1>
         <p class="lead text-center mb-4">Empowering farmers with AI-driven decisions for a sustainable future.</p>
+        
         <div class="info-section">
             <h3>Why Choose Smart Crop Recommendation?</h3>
             <ul>
@@ -110,6 +117,7 @@
                 <li><strong>Easy to Use:</strong> Simple, intuitive interface for all farmers, regardless of technical background.</li>
             </ul>
         </div>
+
         <div class="info-section">
             <h3>How Does It Work?</h3>
             <ul>
@@ -118,11 +126,10 @@
                 <li>Get instant recommendations and explanations for your choices.</li>
             </ul>
         </div>
+
         <div class="text-center mt-4">
             <a href="{{url_for('smart_crop_recommendation')}}" class="btn btn-predict btn-lg">Try Crop Prediction</a>
         </div>
     </div>
 </body>
 </html>
-
-
