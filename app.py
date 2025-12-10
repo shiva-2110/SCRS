@@ -38,7 +38,6 @@ ADMIN_PASS = 'adminpass'
 ADMIN_TOKEN = 'admintoken123'  # simple static token for demo
 
 
-
 @app.route('/login', methods=['GET', 'POST'])
 def login_page():
     if request.method == 'POST':
@@ -90,11 +89,6 @@ def logout():
     session.clear()
     return redirect(url_for('main_page'))
 
-
-
-
-
-
 def admin_required(fn):
     def wrapper(*args, **kwargs):
         token = request.headers.get('X-Admin-Token')
@@ -114,56 +108,6 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-
-# def init_db():
-#     # initialize DB and enable WAL to reduce write locks
-#     conn = get_db_connection()
-#     cur = conn.cursor()
-#     try:
-#         cur.execute('PRAGMA journal_mode=WAL')
-#     except Exception:
-#         pass
-#     # users table stores registered users
-#     cur.execute('''
-#         CREATE TABLE IF NOT EXISTS users (
-#             id INTEGER PRIMARY KEY AUTOINCREMENT,
-#             name TEXT NOT NULL,
-#             mobile TEXT NOT NULL UNIQUE,
-#             address TEXT,
-#             created_at TEXT NOT NULL
-#         )
-#     ''')
-
-      
-
-#     # predictions table stores inputs and results, optionally linked to a user
-#     cur.execute('''
-#         CREATE TABLE IF NOT EXISTS predictions (
-#             id INTEGER PRIMARY KEY AUTOINCREMENT,
-#             user_id INTEGER,
-#             N REAL,
-#             P REAL,
-#             K REAL,
-#             temperature REAL,
-#             humidity REAL,
-#             ph REAL,
-#             rainfall REAL,
-#             predicted_crop TEXT,
-#             input_source TEXT,
-#             created_at TEXT NOT NULL,
-#             FOREIGN KEY(user_id) REFERENCES users(id)
-#         )
-#     ''')
-#     # If DB existed previously, ensure column `input_source` exists
-#     try:
-#         cur.execute("PRAGMA table_info(predictions)")
-#         cols = [r[1] for r in cur.fetchall()]
-#         if 'input_source' not in cols:
-#             cur.execute("ALTER TABLE predictions ADD COLUMN input_source TEXT")
-#     except Exception:
-#         pass
-#     conn.commit()
-#     conn.close()
 
 def init_db():
     conn = get_db_connection()
@@ -203,7 +147,7 @@ def init_db():
         )
     ''')
 
-    # feedback table (this is the missing part!)
+    # feedback table
     cur.execute('''
         CREATE TABLE IF NOT EXISTS feedback (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -243,25 +187,6 @@ try:
 except Exception as e:
     print(f"Warning: could not load label encoder: {e}")
 
-# from tensorflow.keras.models import load_model
-# import cv2
-
-# CNN_MODEL_PATH = os.path.join(os.path.dirname(__file__), 'model', 'cnn_model.h5')
-# ENV_MODEL_PATH = os.path.join(os.path.dirname(__file__), 'model', 'env_model.pkl')
-
-# cnn_model = None
-# env_model = None
-# try:
-#     cnn_model = load_model(CNN_MODEL_PATH)
-# except Exception as e:
-#     print(f"Could not load CNN model: {e}")
-
-# try:
-#     with open(ENV_MODEL_PATH, 'rb') as f:
-#         env_model = pickle.load(f)
-# except Exception as e:
-#     print(f"Could not load environmental model: {e}")
-
 # Crop dictionary (update as per your notebook)
 crop_dict = {
     1: "Rice", 2: "Maize", 3: "Jute", 4: "Cotton", 5: "Coconut", 6: "Papaya", 7: "Orange",
@@ -269,62 +194,6 @@ crop_dict = {
     14: "Pomegranate", 15: "Lentil", 16: "Blackgram", 17: "Mungbean", 18: "Mothbeans",
     19: "Pigeonpeas", 20: "Kidneybeans", 21: "Chickpea", 22: "Coffee"
 }
-
-@app.route('/api/predict_disease', methods=['POST'])
-def predict_disease():
-    crop_type = request.form.get('crop_type')
-    location = request.form.get('location')
-    image = request.files.get('leaf_image')
-
-    if not crop_type or not location or not image:
-        return jsonify({'error': 'Missing crop_type, location, or image'}), 400
-
-    try:
-        # Image preprocessing
-        img_np = np.frombuffer(image.read(), np.uint8)
-        img = cv2.imdecode(img_np, cv2.IMREAD_COLOR)
-        img = cv2.resize(img, (128, 128)) / 255.0
-        img = np.expand_dims(img, axis=0)
-
-        # CNN prediction
-        cnn_pred = cnn_model.predict(img)[0]
-        disease_label = np.argmax(cnn_pred)
-        image_confidence = float(np.max(cnn_pred))
-
-        # Environmental prediction (mocked for now)
-        env_features = np.array([[30, 80, 120]])  # Replace with actual weather data
-        env_risk_score = env_model.predict_proba(env_features)[0][1]  # Assuming binary classifier
-
-        # Fusion
-        final_score = 0.6 * image_confidence + 0.4 * env_risk_score
-        risk_level = "High" if final_score > 0.7 else "Moderate" if final_score > 0.4 else "Low"
-
-        # Suggestion (mocked)
-        suggestion = "Use organic fungicide and monitor humidity."
-
-        return jsonify({
-            "disease": f"Disease {disease_label}",
-            "confidence": round(final_score, 2),
-            "risk_level": risk_level,
-            "suggestion": suggestion
-        })
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/alerts')
-def get_alerts():
-    mobile = request.args.get('mobile')
-    if not mobile:
-        return jsonify({'error': 'mobile required'}), 400
-
-    # Mocked alert logic
-    alerts = [
-        {"disease": "Leaf Blight", "location": "Karchana", "level": "High"},
-        {"disease": "Rust", "location": "Karchana", "level": "Moderate"}
-    ]
-    return jsonify({'alerts': alerts})
-
 
 @app.route('/')
 def main_page():
@@ -591,7 +460,6 @@ def _mqtt_on_message(client, userdata, msg):
         pass
 
 
-
 @app.route('/api/feedback', methods=['POST'])
 def feedback():
     """Record user feedback: actual crop name for a previous prediction.
@@ -613,22 +481,12 @@ def feedback():
         return jsonify({'error': 'user not found'}), 404
     user_id = row['id']
     try:
-        # # store feedback as a special row in predictions with predicted_crop set to actual and a flag in address? Use a separate table
-        # cur.execute('''CREATE TABLE IF NOT EXISTS feedback (
-        #     id INTEGER PRIMARY KEY AUTOINCREMENT,
-        #     user_id INTEGER,
-        #     prediction_id INTEGER,
-        #     N REAL, P REAL, K REAL, temperature REAL, humidity REAL, ph REAL, rainfall REAL,
-        #     actual_crop TEXT,
-        #     created_at TEXT NOT NULL
-        # )''')
-        # if prediction_id supplied, try to copy features from predictions
         N = P = K = temperature = humidity = ph = rainfall = None
         if prediction_id:
             cur.execute('SELECT N,P,K,temperature,humidity,ph,rainfall,input_source FROM predictions WHERE id = ?', (prediction_id,))
             p = cur.fetchone()
             if p:
-                # only accept feedback copied from IoT-origin predictions
+                # only accept feedback copied fromIoT-origin predictions
                 input_source = p['input_source'] if 'input_source' in p.keys() else None
                 if input_source != 'iot':
                     conn.close()
@@ -643,10 +501,6 @@ def feedback():
     except Exception as e:
         conn.close()
         return jsonify({'error': str(e)}), 500
-
-
-
-
 
 # --- Background retrain job system (simple in-memory) ---
 _jobs = {}
@@ -771,9 +625,6 @@ def cleanup_old_jobs(max_age_minutes=60, max_jobs=100):
             for job_id, _ in sorted_jobs[:len(_jobs) - max_jobs]:
                 del _jobs[job_id]
 
-
-
-
 @app.route('/api/admin/retrain', methods=['POST'])
 @admin_required
 def admin_retrain():
@@ -811,16 +662,15 @@ def retrain_status(job_id):
             return jsonify({'error': 'job not found'}), 404
         return jsonify(job)
 
-
 @app.route('/health')
 def health():
     return 'OK', 200
-
 
 if __name__ == '__main__':
     init_db()
     port =int(os.environ.get("PORT",5000))
     app.run(host='0.0.0.0',port=port,debug=True)
+
 
 
 
