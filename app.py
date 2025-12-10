@@ -115,15 +115,65 @@ def get_db_connection():
     return conn
 
 
+# def init_db():
+#     # initialize DB and enable WAL to reduce write locks
+#     conn = get_db_connection()
+#     cur = conn.cursor()
+#     try:
+#         cur.execute('PRAGMA journal_mode=WAL')
+#     except Exception:
+#         pass
+#     # users table stores registered users
+#     cur.execute('''
+#         CREATE TABLE IF NOT EXISTS users (
+#             id INTEGER PRIMARY KEY AUTOINCREMENT,
+#             name TEXT NOT NULL,
+#             mobile TEXT NOT NULL UNIQUE,
+#             address TEXT,
+#             created_at TEXT NOT NULL
+#         )
+#     ''')
+
+      
+
+#     # predictions table stores inputs and results, optionally linked to a user
+#     cur.execute('''
+#         CREATE TABLE IF NOT EXISTS predictions (
+#             id INTEGER PRIMARY KEY AUTOINCREMENT,
+#             user_id INTEGER,
+#             N REAL,
+#             P REAL,
+#             K REAL,
+#             temperature REAL,
+#             humidity REAL,
+#             ph REAL,
+#             rainfall REAL,
+#             predicted_crop TEXT,
+#             input_source TEXT,
+#             created_at TEXT NOT NULL,
+#             FOREIGN KEY(user_id) REFERENCES users(id)
+#         )
+#     ''')
+#     # If DB existed previously, ensure column `input_source` exists
+#     try:
+#         cur.execute("PRAGMA table_info(predictions)")
+#         cols = [r[1] for r in cur.fetchall()]
+#         if 'input_source' not in cols:
+#             cur.execute("ALTER TABLE predictions ADD COLUMN input_source TEXT")
+#     except Exception:
+#         pass
+#     conn.commit()
+#     conn.close()
+
 def init_db():
-    # initialize DB and enable WAL to reduce write locks
     conn = get_db_connection()
     cur = conn.cursor()
     try:
         cur.execute('PRAGMA journal_mode=WAL')
     except Exception:
         pass
-    # users table stores registered users
+
+    # users table
     cur.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -134,9 +184,7 @@ def init_db():
         )
     ''')
 
-      
-
-    # predictions table stores inputs and results, optionally linked to a user
+    # predictions table
     cur.execute('''
         CREATE TABLE IF NOT EXISTS predictions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -154,16 +202,22 @@ def init_db():
             FOREIGN KEY(user_id) REFERENCES users(id)
         )
     ''')
-    # If DB existed previously, ensure column `input_source` exists
-    try:
-        cur.execute("PRAGMA table_info(predictions)")
-        cols = [r[1] for r in cur.fetchall()]
-        if 'input_source' not in cols:
-            cur.execute("ALTER TABLE predictions ADD COLUMN input_source TEXT")
-    except Exception:
-        pass
+
+    # feedback table (this is the missing part!)
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS feedback (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            prediction_id INTEGER,
+            N REAL, P REAL, K REAL, temperature REAL, humidity REAL, ph REAL, rainfall REAL,
+            actual_crop TEXT,
+            created_at TEXT NOT NULL
+        )
+    ''')
+
     conn.commit()
     conn.close()
+
 
 # Load model and scaler (use file-relative paths so working dir doesn't matter)
 MODEL_PATH = os.path.join(os.path.dirname(__file__),'model', 'model.pkl')
@@ -767,6 +821,7 @@ if __name__ == '__main__':
     init_db()
     port =int(os.environ.get("PORT",5000))
     app.run(host='0.0.0.0',port=port,debug=True)
+
 
 
 
