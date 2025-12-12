@@ -401,14 +401,87 @@ def admin_feedback():
 def recommend():
     data = request.get_json()
     try:
-        N = float(data['N']); P = float(data['P']); K = float(data['K'])
-        temperature = float(data['temperature']); humidity = float(data['humidity'])
-        ph = float(data['ph']); rainfall = float(data['rainfall'])
+        # Parse inputs
+        N = float(data['N'])
+        P = float(data['P'])
+        K = float(data['K'])
+        temperature = float(data['temperature'])
+        humidity = float(data['humidity'])
+        ph = float(data['ph'])
+        rainfall = float(data['rainfall'])
 
-        # ✅ Validate before prediction
+        # ✅ Validate ranges before prediction
         errors = validate_crop_inputs(N, P, K, temperature, humidity, ph, rainfall)
         if errors:
             return jsonify({"error": errors}), 400
+
+        features = np.array([[N, P, K, temperature, humidity, ph, rainfall]])
+        print(f"Received input: N={N}, P={P}, K={K}, temperature={temperature}, humidity={humidity}, ph={ph}, rainfall={rainfall}")
+
+        if scaler is None or model is None:
+            return jsonify({'error': 'model or scaler not loaded on server'}), 500
+
+        # Transform features
+        transformed = scaler.transform(features)
+
+        # Try to obtain probabilities
+        probs = None
+        if hasattr(model, 'predict_proba'):
+            try:
+                probs = model.predict_proba(transformed).tolist()
+            except Exception as e:
+                print(f"Warning: could not compute probabilities: {e}")
+                probs = None
+
+        # Predict crop
+        prediction = model.predict(transformed)[0]
+        crop = le.inverse_transform([prediction])[0] if le else crop_dict.get(prediction, "Unknown")
+        print(f"Predicted crop: {crop}")
+
+        # Link prediction to user if mobile provided
+        mobile = data.get('mobile')
+        user_id = None
+        if mobile:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute('SELECT id FROM users WHERE mobile = ?', (mobile,))
+            r = cur.fetchone()
+            if r:
+                user_id = r['id']
+            conn.close()
+
+        # Store prediction safely
+        prediction_id = None
+        try:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute('''INSERT INTO predictions 
+                (user_id, N, P, K, temperature, humidity, ph, rainfall, predicted_crop, input_source, created_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?)''',
+                (user_id, N, P, K, temperature, humidity, ph, rainfall, crop, 'api', datetime.utcnow().isoformat()))
+            conn.commit()
+            prediction_id = cur.lastrowid
+            conn.close()
+        except Exception as e:
+            print(f"Warning: could not save prediction: {e}")
+
+        # Return debug info if requested
+        if data.get('debug'):
+            return jsonify({
+                'crop': crop,
+                'prediction_raw': int(prediction) if np.issubdtype(type(prediction), np.integer) else prediction,
+                'transformed': transformed.tolist(),
+                'probs': probs,
+                'prediction_id': prediction_id
+            })
+
+        # Normal response
+        return jsonify({'crop': crop, 'prediction_id': prediction_id})
+
+    except Exception as e:
+        print(f"Error in /api/recommend: {e}")
+        return jsonify({'error': str(e)}), 400
+
 
 
 
@@ -633,6 +706,7 @@ if __name__ == '__main__':
     init_db()
     port =int(os.environ.get("PORT",5000))
     app.run(host='0.0.0.0',port=port,debug=True)
+
 
 
 
