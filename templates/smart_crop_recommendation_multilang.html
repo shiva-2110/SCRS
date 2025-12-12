@@ -141,31 +141,31 @@
             </div>
             <div class="mb-3">
                 <label for="N" class="form-label" id="labelN">Nitrogen (N)</label>
-                <input type="number" class="form-control" id="N" required>
+                <input type="number" class="form-control" id="N" min="0" max="140" required>
             </div>
             <div class="mb-3">
                 <label for="P" class="form-label" id="labelP">Phosphorus (P)</label>
-                <input type="number" class="form-control" id="P" required>
+                <input type="number" class="form-control" id="P" min="0" max="140" required>
             </div>
             <div class="mb-3">
                 <label for="K" class="form-label" id="labelK">Potassium (K)</label>
-                <input type="number" class="form-control" id="K" required>
+                <input type="number" class="form-control" id="K" min="0" max="140" required>
             </div>
             <div class="mb-3">
                 <label for="temperature" class="form-label" id="labelTemp">Temperature (°C)</label>
-                <input type="number" step="0.1" class="form-control" id="temperature" required>
+                <input type="number" step="0.1" class="form-control" id="temperature" min="0" max="50" required>
             </div>
             <div class="mb-3">
                 <label for="humidity" class="form-label" id="labelHum">Humidity (%)</label>
-                <input type="number" step="0.1" class="form-control" id="humidity" required>
+                <input type="number" step="0.1" class="form-control" id="humidity" min="0" max="100" required>
             </div>
             <div class="mb-3">
                 <label for="ph" class="form-label" id="labelPh">pH</label>
-                <input type="number" step="0.1" class="form-control" id="ph" required>
+                <input type="number" step="0.1" class="form-control" id="ph" min="3.5" max="9.5" required>
             </div>
             <div class="mb-3">
                 <label for="rainfall" class="form-label" id="labelRain">Rainfall (mm)</label>
-                <input type="number" step="0.1" class="form-control" id="rainfall" required>
+                <input type="number" step="0.1" class="form-control" id="rainfall" min="0" max="1000" required>
             </div>
             <hr>
 <!-- <h5>Disease Risk Prediction (Optional)</h5> -->
@@ -567,8 +567,39 @@ try {
             });
         })();
     </script>
+    <script>
+document.getElementById("cropForm").addEventListener("submit", function(e) {
+  const fields = [
+    { id: "N", min: 0, max: 140 },
+    { id: "P", min: 0, max: 140 },
+    { id: "K", min: 0, max: 140 },
+    { id: "temperature", min: 0, max: 50 },
+    { id: "humidity", min: 0, max: 100 },
+    { id: "ph", min: 3.5, max: 9.5 },
+    { id: "rainfall", min: 0, max: 1000 }
+  ];
+
+  let valid = true;
+  let message = "";
+
+  fields.forEach(field => {
+    const value = parseFloat(document.getElementById(field.id).value);
+    if (isNaN(value) || value < field.min || value > field.max) {
+      valid = false;
+      message += `${field.id} must be between ${field.min} and ${field.max}\n`;
+    }
+  });
+
+  if (!valid) {
+    e.preventDefault();
+    alert("⚠️ Invalid input:\n" + message);
+  }
+});
+</script>
+
 </body>
 </html>
+
 
 
 
