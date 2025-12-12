@@ -12,6 +12,24 @@ import uuid
 import firebase_admin
 from firebase_admin import credentials, auth
 
+def validate_crop_inputs(N, P, K, temperature, humidity, ph, rainfall):
+    rules = {
+        "N": (0, 140),
+        "P": (0, 140),
+        "K": (0, 140),
+        "temperature": (0, 50),
+        "humidity": (0, 100),
+        "ph": (3.5, 9.5),
+        "rainfall": (0, 1000)
+    }
+    errors = {}
+    for key, (min_val, max_val) in rules.items():
+        val = locals()[key]
+        if val < min_val or val > max_val:
+            errors[key] = f"{key} must be between {min_val} and {max_val}"
+    return errors
+
+
 firebase_key = json.loads(os.environ.get("FIREBASE_KEY_JSON"))
 cred = credentials.Certificate(firebase_key)
 firebase_admin.initialize_app(cred)
@@ -53,7 +71,8 @@ def login_page():
         else:
             return render_template('login.html', error='Mobile not found')
     return render_template('login.html')
-    
+
+
 @app.route('/predict', methods=['POST'])
 def predict():
     if not session.get('user_id'):
@@ -68,20 +87,21 @@ def predict():
         ph = float(request.form['ph'])
         rainfall = float(request.form['rainfall'])
 
+        #  Validate before prediction
+        errors = validate_crop_inputs(N, P, K, temperature, humidity, ph, rainfall)
+        if errors:
+            return render_template('smart_crop_recommendation_multilang.html', error=errors)
+
         input_data = np.array([[N, P, K, temperature, humidity, ph, rainfall]])
         input_scaled = scaler.transform(input_data)
         prediction = model.predict(input_scaled)[0]
 
-        if le:
-            crop = le.inverse_transform([prediction])[0]
-        else:
-            crop = crop_dict.get(prediction, "Unknown")
-
+        crop = le.inverse_transform([prediction])[0] if le else crop_dict.get(prediction, "Unknown")
         return render_template('result.html', crop=crop)
 
     except Exception as e:
-        # If form is empty or error occurs, show input page again
         return render_template('smart_crop_recommendation_multilang.html', error=str(e))
+
 
 
 @app.route('/logout')
@@ -381,72 +401,15 @@ def admin_feedback():
 def recommend():
     data = request.get_json()
     try:
-        N = float(data['N'])
-        P = float(data['P'])
-        K = float(data['K'])
-        temperature = float(data['temperature'])
-        humidity = float(data['humidity'])
-        ph = float(data['ph'])
-        rainfall = float(data['rainfall'])
-        features = np.array([[N, P, K, temperature, humidity, ph, rainfall]])
-        print(f"Received input: N={N}, P={P}, K={K}, temperature={temperature}, humidity={humidity}, ph={ph}, rainfall={rainfall}")
-        if scaler is None or model is None:
-            return jsonify({'error': 'model or scaler not loaded on server'}), 500
-        transformed = scaler.transform(features)
-        # try to obtain probabilities if supported
-        probs = None
-        try:
-            if hasattr(model, 'predict_proba'):
-                probs = model.predict_proba(transformed).tolist()
-        except Exception:
-            probs = None
-        prediction = model.predict(transformed)[0]
-        if le:
-            crop = le.inverse_transform([prediction])[0]
-        else:
-            crop = crop_dict.get(prediction, "Unknown")
+        N = float(data['N']); P = float(data['P']); K = float(data['K'])
+        temperature = float(data['temperature']); humidity = float(data['humidity'])
+        ph = float(data['ph']); rainfall = float(data['rainfall'])
 
-        print(f"Predicted crop: {crop}")
+        # ✅ Validate before prediction
+        errors = validate_crop_inputs(N, P, K, temperature, humidity, ph, rainfall)
+        if errors:
+            return jsonify({"error": errors}), 400
 
-        # If mobile provided, link prediction to user
-        mobile = data.get('mobile')
-        user_id = None
-        if mobile:
-            conn = get_db_connection()
-            cur = conn.cursor()
-            cur.execute('SELECT id FROM users WHERE mobile = ?', (mobile,))
-            r = cur.fetchone()
-            if r:
-                user_id = r['id']
-            conn.close()
-
-        # store prediction
-        try:
-            conn = get_db_connection()
-            cur = conn.cursor()
-            cur.execute('''INSERT INTO predictions (user_id, N, P, K, temperature, humidity, ph, rainfall, predicted_crop, input_source, created_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?)''',
-            (user_id, N, P, K, temperature, humidity, ph, rainfall, crop, 'api', datetime.utcnow().isoformat()))
-            conn.commit()
-            prediction_id = cur.lastrowid
-            conn.close()
-        except Exception as e:
-            print(f"Warning: could not save prediction: {e}")
-
-      
-        # If client asked for debug info, return transformed vector and raw outputs
-        if data.get('debug'):
-            return jsonify({
-                'crop': crop,
-                'prediction_raw': int(prediction) if np.issubdtype(type(prediction), np.integer) else prediction,
-                'transformed': transformed.tolist(),
-                'probs': probs,
-                'prediction_id': prediction_id if 'prediction_id' in locals() else None
-            })
-        return jsonify({'crop': crop, 'prediction_id': prediction_id if 'prediction_id' in locals() else None})
-    except Exception as e:
-        print(f"Error: {e}")
-        return jsonify({'error': str(e)}), 400
 
 
 def _mqtt_on_message(client, userdata, msg):
@@ -670,6 +633,7 @@ if __name__ == '__main__':
     init_db()
     port =int(os.environ.get("PORT",5000))
     app.run(host='0.0.0.0',port=port,debug=True)
+
 
 
 
