@@ -8,7 +8,6 @@ from datetime import datetime , timedelta
 import json,os
 import threading
 import uuid
-
 import firebase_admin
 from firebase_admin import credentials, auth
 
@@ -294,7 +293,7 @@ def admin_login():
         expiry = datetime.utcnow() + timedelta(hours=2)
         active_tokens[ADMIN_TOKEN] = expiry
         return jsonify({'token': ADMIN_TOKEN})
-    return jsonify({'error': 'invalid credentials'}), 401
+    return jsonify({'error': 'Incorrect username or password'}), 401
 
 # app.py mein naya route
 @app.route('/api/admin/update-password', methods=['POST'])
@@ -727,6 +726,7 @@ if __name__ == '__main__':
     init_db()
     port =int(os.environ.get("PORT",5000))
     app.run(host='0.0.0.0',port=port,debug=True)
+
 
 
 
