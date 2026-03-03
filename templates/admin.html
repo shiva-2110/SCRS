@@ -54,6 +54,22 @@
       <tbody id="feedbackTbody"></tbody>
     </table>
   </div>
+
+      
+<div class="mt-5 p-3 border rounded bg-light">
+  <h5>Security Settings</h5>
+  <div class="row g-2">
+    <div class="col-md-4">
+      <input type="password" id="oldPass" class="form-control" placeholder="Current Password">
+    </div>
+    <div class="col-md-4">
+      <input type="password" id="newPass" class="form-control" placeholder="New Password">
+    </div>
+    <div class="col-md-4">
+      <button id="btnUpdatePass" class="btn btn-warning w-100">Update Password</button>
+    </div>
+  </div>
+</div>    
 </div>
 
 
@@ -232,9 +248,36 @@
         document.getElementById('iotLatest').innerText = `Topic: ${d.topic} @ ${d.timestamp} — ${JSON.stringify(d.data)}`;
       }catch(e){}
     },5000);
+    document.getElementById('btnUpdatePass').addEventListener('click', async () => {
+  const oldPassword = document.getElementById('oldPass').value;
+  const newPassword = document.getElementById('newPass').value;
+
+  try {
+    const res = await fetch(`${BASE_URL}/api/admin/update-password`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-Admin-Token': token 
+      },
+      body: JSON.stringify({ oldPassword, newPassword })
+    });
+
+    const data = await res.json();
+    if(res.ok) {
+      alert(data.success);
+      localStorage.removeItem('adminToken'); // Security ke liye logout karein
+      location.href = '/admin/login';
+    } else {
+      alert(data.error);
+    }
+  } catch (err) {
+    alert("Connection error!");
+  }
+});
   </script>
 </body>
 </html>
+
 
 
 
