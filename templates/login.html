@@ -149,7 +149,7 @@
             document.getElementById('msg').innerHTML = '<div class="alert alert-success">Admin logged in. Redirecting...</div>';
             setTimeout(()=> location.href='/admin/dashboard',800);
           } else {
-            document.getElementById('msg').innerHTML = `<div class="alert alert-danger">${data.error||'Login failed'} (status ${res.status})</div>`;
+            document.getElementById('msg').innerHTML = `<div class="alert alert-danger">${data.error||'Login failed'}</div>`;
           }
         }catch(err){
           console.error('Admin login fetch error', err);
@@ -240,6 +240,7 @@ if ("serviceWorker" in navigator) {
 
 </body>
 </html>
+
 
 
 
