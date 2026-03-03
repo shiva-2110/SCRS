@@ -392,9 +392,14 @@ def admin_feedback():
         ''')
         rows = cur.fetchall()
         conn.close()
+        # Agar rows khali hain toh empty list bhejni hai
+        if not rows:
+            return jsonify({'feedback': []})
+            
         return jsonify({'feedback': [dict(r) for r in rows]})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Feedback error: {e}")
+        return jsonify({'feedback': [], 'message': 'No data found'}), 200
 
 
 @app.route('/api/recommend', methods=['POST'])
@@ -706,6 +711,7 @@ if __name__ == '__main__':
     init_db()
     port =int(os.environ.get("PORT",5000))
     app.run(host='0.0.0.0',port=port,debug=True)
+
 
 
 
