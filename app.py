@@ -291,7 +291,7 @@ def admin_login():
     user = data.get('username')
     pwd = data.get('password')
     if user == ADMIN_USER and pwd == ADMIN_PASS:
-        expiry = datetime.utcnow() + timedelta(seconds=60)
+        expiry = datetime.utcnow() + timedelta(hours=2)
         active_tokens[ADMIN_TOKEN] = expiry
         return jsonify({'token': ADMIN_TOKEN})
     return jsonify({'error': 'invalid credentials'}), 401
@@ -706,6 +706,7 @@ if __name__ == '__main__':
     init_db()
     port =int(os.environ.get("PORT",5000))
     app.run(host='0.0.0.0',port=port,debug=True)
+
 
 
 
