@@ -202,6 +202,11 @@
   try {
     const res = await fetch(`${BASE_URL}/api/admin/feedback`, { headers: { 'X-Admin-Token': token } });
     const data = await res.json();
+    // Check karein ki data.feedback sahi se mila ya nahi
+    if (!data || !data.feedback) {
+       console.log("No feedback yet");
+       return;
+    }
     const tbody = document.getElementById('feedbackTbody');
     tbody.innerHTML = '';
     (data.feedback || []).forEach(f => {
@@ -210,7 +215,7 @@
       tbody.appendChild(tr);
     });
   } catch (err) {
-    document.getElementById('feedbackArea').innerHTML = '<div class="alert alert-danger">Could not load feedback</div>';
+    console.error("Feedback error:", err);
   }
 });
 
@@ -230,6 +235,7 @@
   </script>
 </body>
 </html>
+
 
 
 
