@@ -147,7 +147,7 @@
           if(res.ok){
             localStorage.setItem('adminToken', data.token);
             document.getElementById('msg').innerHTML = '<div class="alert alert-success">Admin logged in. Redirecting...</div>';
-            setTimeout(()=> location.href='/admin',800);
+            setTimeout(()=> location.href='/admin/dashboard',800);
           } else {
             document.getElementById('msg').innerHTML = `<div class="alert alert-danger">${data.error||'Login failed'} (status ${res.status})</div>`;
           }
@@ -240,6 +240,7 @@ if ("serviceWorker" in navigator) {
 
 </body>
 </html>
+
 
 
 
