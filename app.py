@@ -296,7 +296,23 @@ def admin_login():
         return jsonify({'token': ADMIN_TOKEN})
     return jsonify({'error': 'invalid credentials'}), 401
 
-   
+# app.py mein naya route
+@app.route('/api/admin/update-password', methods=['POST'])
+@admin_required
+def update_password():
+    global ADMIN_PASS # Global variable ko update karne ke liye
+    data = request.get_json()
+    old_pwd = data.get('oldPassword')
+    new_pwd = data.get('newPassword')
+
+    if old_pwd != ADMIN_PASS:
+        return jsonify({'error': 'Old password is incorrect'}), 400
+    
+    if not new_pwd or len(new_pwd) < 6:
+        return jsonify({'error': 'New password must be at least 6 characters'}), 400
+
+    ADMIN_PASS = new_pwd
+    return jsonify({'success': 'Password updated successfully. Please login again.'})   
 
 @app.route('/api/admin/users')
 @admin_required
@@ -711,6 +727,7 @@ if __name__ == '__main__':
     init_db()
     port =int(os.environ.get("PORT",5000))
     app.run(host='0.0.0.0',port=port,debug=True)
+
 
 
 
