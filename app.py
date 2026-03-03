@@ -49,6 +49,8 @@ _mqtt_running = False
 _latest_iot = None
 
 # Simple admin credentials (change in production)
+os.getenv("ADMIN_USER", "admin")
+os.getenv("ADMIN_PASS", "adminpass")
 ADMIN_TOKEN = 'admintoken123'  # simple static token for demo
 
 
@@ -723,6 +725,7 @@ if __name__ == '__main__':
     init_db()
     port =int(os.environ.get("PORT",5000))
     app.run(host='0.0.0.0',port=port,debug=True)
+
 
 
 
