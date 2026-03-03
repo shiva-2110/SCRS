@@ -125,10 +125,7 @@
         mobileEl && mobileEl.focus();
       }
     });
-    document.getElementById('autofillAdmin').addEventListener('click', function(){
-      document.getElementById('adminUser').value = 'admin';
-      document.getElementById('adminPass').value = 'adminpass';
-    });
+    
     const loginForm = document.getElementById('loginForm');
     const btnLogin = document.getElementById('btnLogin');
     btnLogin.addEventListener('click', function(){
@@ -243,6 +240,7 @@ if ("serviceWorker" in navigator) {
 
 </body>
 </html>
+
 
 
 
