@@ -33,7 +33,6 @@ firebase_key = json.loads(os.environ.get("FIREBASE_KEY_JSON"))
 cred = credentials.Certificate(firebase_key)
 firebase_admin.initialize_app(cred)
 
-
 app = Flask(__name__)
 CORS(app,origins=["https://sisso.dgon.onrender.com"], supports_credentials=True)
 
@@ -50,8 +49,6 @@ _mqtt_running = False
 _latest_iot = None
 
 # Simple admin credentials (change in production)
-ADMIN_USER = 'admin'
-ADMIN_PASS = 'adminpass'
 ADMIN_TOKEN = 'admintoken123'  # simple static token for demo
 
 
@@ -293,7 +290,7 @@ def admin_login():
         expiry = datetime.utcnow() + timedelta(hours=2)
         active_tokens[ADMIN_TOKEN] = expiry
         return jsonify({'token': ADMIN_TOKEN})
-    return jsonify({'error': 'Incorrect username or password'}), 401
+    return jsonify({'error': 'Incorrect username or password'}),401
 
 # app.py mein naya route
 @app.route('/api/admin/update-password', methods=['POST'])
@@ -726,6 +723,7 @@ if __name__ == '__main__':
     init_db()
     port =int(os.environ.get("PORT",5000))
     app.run(host='0.0.0.0',port=port,debug=True)
+
 
 
 
