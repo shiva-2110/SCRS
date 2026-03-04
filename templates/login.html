@@ -213,33 +213,20 @@ document.addEventListener("DOMContentLoaded", () => {
     // remove after some time
     setTimeout(() => bubble.remove(), 15000);
   }
-
   // continuously spawn bubbles
   setInterval(createBubble, 1000);
 });
 </script>
-
-
-    <script>
+<script>
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/service-worker.js")
     .then(reg => console.log("Service Worker registered:", reg))
     .catch(err => console.error("Service Worker registration failed:", err));
 }
 </script>
-
-
-    <script>
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/service-worker.js")
-    .then(reg => console.log("Service Worker registered:", reg))
-    .catch(err => console.error("Service Worker registration failed:", err));
-}
-</script>
-
-
 </body>
 </html>
+
 
 
 
